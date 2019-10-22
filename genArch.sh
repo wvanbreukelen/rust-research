@@ -65,5 +65,7 @@ EOF
 
 cat temp.toml >> Cargo.toml
 
+rm temp.toml
+
 echo "Finalising..."
 cargo fmt
