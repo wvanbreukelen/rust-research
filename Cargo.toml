@@ -1,0 +1,27 @@
+[package]
+name = "my_due_project"
+version = "0.1.0"
+authors = ["wiebe <wdownload@xs4all.nl>"]
+edition = "2018"
+
+[dependencies]
+cortex-m = "0.6.0"
+cortex-m-rt = "0.6.10"
+cortex-m-semihosting = "0.3.3"
+panic-halt = "0.2.0"
+
+[[bin]]
+name = "my_due_project"
+#path = "main.rs"
+test = false
+bench = false
+
+[dependencies.sam3x8e]
+path = "rust-platforms/sam3x8e"
+features = ["rt"]
+#version = "0.1.0"
+
+[profile.release]
+codegen-units = 1 # better optimizations
+debug = true # symbols are nice and they don't increase the size on Flash
+lto = true # better optimizations
