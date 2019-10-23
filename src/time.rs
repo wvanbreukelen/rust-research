@@ -32,7 +32,7 @@ impl Time<cortex_m::peripheral::SYST> {
         return Time { hw_timer: syst };
     }
 
-    pub fn now_ticks() -> u32 { // Suppress warning by: https://www.reddit.com/r/rust/comments/8xs2it/warning_item_is_never_used_when_making_a_library/
+    pub fn _now_ticks(&self) -> u32 { // Suppress warning by: https://www.reddit.com/r/rust/comments/8xs2it/warning_item_is_never_used_when_making_a_library/
         return cortex_m::peripheral::SYST::get_current();
     }
 
