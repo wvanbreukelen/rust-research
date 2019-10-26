@@ -1,5 +1,3 @@
-#[macro_use]
-
 pub use cortex_m::peripheral::syst;
 pub use sam3x8e as target;
 
@@ -13,104 +11,110 @@ pub struct IsInput;
 pub struct IsOutput;
 pub struct Unknown;
 
-
 pub struct Pin<'a, T, ENABLED, DIRECTION> {
     port: &'a T, // _CODR
     pin_mask: u32,
     enabled: ENABLED,
-    direction: DIRECTION
-
-    // is output
-    // is input
-    // is bidirectional
-}
-impl<T, ENABLED, DIRECTION> Pin<T, ENABLED, DIRECTION> {
-    // fn shallow_copy_config<'a, ENABLED, DIRECTION>(_port: &'a target::$PIOX, _pin_mask: u32, _enabled: ENABLED, _direction: DIRECTION) -> Pin<'a, target::$PIOX, ENABLED, DIRECTION> {
-    //     return Pin {port: _port, pin_mask: _pin_mask, direction: _direction, enabled: _enabled};
-    // }
-
-    pub fn copy(_p: T, _pin_mask: u32, _enabled: ENABLED, _direction: DIRECTION) -> Self {
-        Pin { port: _p, pin_mask: _pin_mask, enabled: _enabled, direction: _direction }
-    }
+    direction: DIRECTION, // is output
+                          // is input
+                          // is bidirectional
 }
 
 pub trait Configuration<T, STATE, DIRECTION> {
-    //fn enable(&self);
     fn disable(self);
 
-    fn set_as_output(self) -> Pin<T, IsEnabled, IsOutput>;
-    fn set_as_input(self) -> Pin<T, IsEnabled, IsInput>;
-    //fn shallow_copy_config<'a, ENABLED, DIRECTION>(self, _enabled: ENABLED, _direction: DIRECTION) -> Pin<'a, T, ENABLED, DIRECTION>
-    
+    fn as_output(&self) -> Pin<T, IsEnabled, IsOutput>;
+    fn as_input(&self) -> Pin<T, IsEnabled, IsInput>;
     //fn enable_pullup();
     //fn disable_pullup();
 }
-    
 
 pub trait Write {
-    fn set_state(self, s: bool);
-    //fn set_high();
+    fn set_state(&self, s: bool);
+    fn set_high(&self);
+    fn set_low(&self);
 }
 
 pub trait Read {
-    //fn get_state(&self) -> bool;
-    //fn set_low();
+    fn get_state(&self) -> bool;
 }
 
-
-pub fn create<T>(_port: &'a T, _pin_mask: u32) -> Pin<T, IsDisabled, Unknown> {
-    return Pin {port: _port, pin_mask: _pin_mask, direction: Unknown, enabled: IsDisabled};
+pub fn create<'a, T>(_port: &'a T, _pin_mask: u32) -> Pin<'a, T, IsDisabled, Unknown> {
+    return Pin {
+        port: _port,
+        pin_mask: _pin_mask,
+        direction: Unknown,
+        enabled: IsDisabled,
+    };
 }
-
-
-
 // Macro for PIOA, PIOB, PIOC, PIOD generation
 macro_rules! add_control_pio {
-    ($PIOX:ident) =>
-    {
-
-        impl<T, ENABLED, DIRECTION> Configuration<T, ENABLED, DIRECTION> for Pin<'_, target::$PIOX, ENABLED, DIRECTION> {            
+    ($PIOX:ident) => {
+        impl<ENABLED, DIRECTION> Configuration<target::$PIOX, ENABLED, DIRECTION>
+            for Pin<'_, target::$PIOX, ENABLED, DIRECTION>
+        {
             fn disable(self) {
-                self.port.odr.write_with_zero(|w| unsafe { w.bits(self.pin_mask)});
+                self.port
+                    .odr
+                    .write_with_zero(|w| unsafe { w.bits(self.pin_mask) });
             }
 
-            fn set_as_output(self) -> Pin<'_, T, IsEnabled, IsOutput>{
-                self.port.oer.write_with_zero(|w| unsafe { w.bits(self.pin_mask)});
+            fn as_output(&self) -> Pin<target::$PIOX, IsEnabled, IsOutput> {
+                self.port
+                    .oer
+                    .write_with_zero(|w| unsafe { w.bits(self.pin_mask) });
 
-                //return Pin {port: self.port, pin_mask: self.pin_mask, direction: IsOutput, enabled: IsEnabled};
-                //return self.shallow_copy_config(self.port, self.pin_mask, IsEnabled, IsOutput);
+                return Pin {
+                    port: self.port,
+                    pin_mask: self.pin_mask,
+                    direction: IsOutput,
+                    enabled: IsEnabled,
+                };
             }
+            // https://stackoverflow.com/questions/47759124/returning-a-generic-struct-from-new?rq=1
+            fn as_input(&self) -> Pin<target::$PIOX, IsEnabled, IsInput> {
+                self.port
+                    .ier
+                    .write_with_zero(|w| unsafe { w.bits(self.pin_mask) });
 
-            fn set_as_input(self) {
-                self.port.ier.write_with_zero(|w| unsafe { w.bits(self.pin_mask)});
-
-                //return shallow_copy_config(self.port, self.pin_mask, IsEnabled, IsInput);
+                return Pin {
+                    port: self.port,
+                    pin_mask: self.pin_mask,
+                    direction: IsInput,
+                    enabled: IsEnabled,
+                };
             }
         }
 
         impl Write for Pin<'_, target::$PIOX, IsEnabled, IsOutput> {
-            fn set_state(self, s: bool) {
+            fn set_state(&self, s: bool) {
+                if s {
+                    self.port
+                        .codr
+                        .write_with_zero(|w| unsafe { w.bits(self.pin_mask) });
+                } else {
+                    self.port
+                        .codr
+                        .write_with_zero(|w| unsafe { w.bits(self.pin_mask) });
+                }
+            }
 
+            fn set_high(&self) {
+                self.port
+                    .codr
+                    .write_with_zero(|w| unsafe { w.bits(self.pin_mask) });
+            }
+
+            fn set_low(&self) {
+                self.port
+                    .codr
+                    .write_with_zero(|w| unsafe { w.bits(self.pin_mask) });
             }
         }
-
-        // impl Configuration for Pin<'_, target::$PIOX, Enabled, Output> {
-        //     fn set_state(&self, s: bool) {
-        //         if s {
-        //             self.port.codr.write_with_zero(|w| unsafe { w.bits(self.pin_mask)});
-        //         } else {
-        //             self.port.codr.write_with_zero(|w| unsafe { w.bits(self.pin_mask)});
-        //         }
-        //     }
-        // }
-
-
-    }
-
+    };
 }
 
-
-//add_control_pio!(PIOA);
+add_control_pio!(PIOA);
 add_control_pio!(PIOB);
-//add_control_pio!(PIOC);
-//add_control_pio!(PIOD);
+add_control_pio!(PIOC);
+add_control_pio!(PIOD);

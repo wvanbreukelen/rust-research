@@ -1,3 +1,4 @@
 ELF=my_due_project
-cargo size --bin $ELF -- -A
-cargo objcopy --bin $ELF -- -Obinary /tmp/$ELF.bin
+TARGET=thumbv7m-none-eabi
+cargo size --release --target $TARGET --bin  $ELF -- -A
+cargo objcopy --release --target $TARGET --bin $ELF -- -Obinary /tmp/$ELF.bin

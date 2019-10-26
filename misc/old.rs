@@ -296,7 +296,7 @@ macro_rules! add_control_pio {
             return Pin {port: _port, pin_mask: _pin_mask, direction: _direction, enabled: _enabled};
         }
 
-        impl<T, ENABLED, DIRECTION> Configuration<T, ENABLED, DIRECTION> for Pin<'_, target::$PIOX, ENABLED, DIRECTION> {
+        impl<T, ENABLED, DIRECTION> Configuration<T, ENABLED, DIRECTION> for Pin<target::$PIOX, ENABLED, DIRECTION> {
             fn disable(&self) {
                 self.port.odr.write_with_zero(|w| unsafe { w.bits(self.pin_mask)});
             }

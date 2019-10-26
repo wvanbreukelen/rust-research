@@ -1,8 +1,6 @@
-
 #![no_std]
 #![no_main]
-#[macro_use]
-
+//#[macro_use]
 // Source: https://github.com/stm32-rs/stm32f4xx-hal/blob/9dab1701bc68efe3a1df8eb3b93c866d7ef1fa0e/src/lib.rs
 //#[cfg(not(feature = "device-selected"))]
 // compile_error!("This crate requires one of the following device features enabled:
@@ -24,49 +22,43 @@
 //         stm32f469
 //         stm32f479");
 //#![deny(unsafe_code)]
-
 extern crate panic_halt;
 
-use cortex_m_rt::entry;
+use core::mem::size_of;
 pub use cortex_m::peripheral::syst;
 use cortex_m::peripheral::Peripherals as CorePeripherals;
+use cortex_m_rt::entry;
 //extern crate sam3x8e;
+
+#[macro_use]
+extern crate static_assertions;
 
 pub use sam3x8e as target;
 
-mod time;
 mod pin;
+mod time;
 //mod serial;
+use crate::pin::{Configuration, Write};
 use crate::time::Delay;
-use crate::pin::Configuration;
-
-
 
 // Help: https://rust-embedded.github.io/book/start/registers.html
 #[entry]
 fn main() -> ! {
-    if let (Some(cp), Some(dp)) = (
-        CorePeripherals::take(),
-        target::Peripherals::take()
-    ) {
+    if let (Some(cp), Some(dp)) = (CorePeripherals::take(), target::Peripherals::take()) {
         let mut on = false;
-            
         let pmc = dp.PMC;
         let watchdog = dp.WDT;
-        let uart = dp.UART;
-
-
-        
+        let _uart = dp.UART;
 
         //let pin13 = pin::Pin::create<piob>();
 
         //create_pin!(piob);
 
-        pmc.pmc_pcer0.write_with_zero(|w| unsafe { w.bits(0x3F << 11)});
+        pmc.pmc_pcer0
+            .write_with_zero(|w| unsafe { w.bits(0x3F << 11) });
 
         // Disable the watchdog.
-        watchdog.mr.write(|w| w.wddis().set_bit() );
-    
+        watchdog.mr.write(|w| w.wddis().set_bit());
         // Enable output to p27.
         //piob.oer.write_with_zero(|w| w.p27().set_bit());
 
@@ -74,11 +66,12 @@ fn main() -> ! {
         //piob.codr.write_with_zero(|w| w.p27().set_bit() );
 
         let pin13 = pin::create(&dp.PIOB, 1 << 27); // This pin has now ownership over dp.PIOB
-        //pin13.enable();
-        //pin13.set_state(true);
+                                                    //pin13.enable();
 
-        pin13.
+        let _ = size_of::<pin::Pin<target::PIOB, pin::IsDisabled, pin::Unknown>>();
+        const_assert_eq!(0, size_of::<pin::IsEnabled>());
 
+        let pin13_output = pin13.as_output();
 
         // Do something.
         let mut t = time::Time::syst(cp.SYST);
@@ -86,15 +79,13 @@ fn main() -> ! {
         t.delay_ms(2_000_000);
 
         loop {
-            
             if t.has_wrapped() {
                 // Turn on the LED!
                 if on {
-                    //pin13.set_state(true);
+                    pin13_output.set_state(true);
                 } else {
-                    //pin13.set_state(false);
+                    pin13_output.set_state(false);
                 }
-                
                 on = !on;
                 t.delay_ms(2_000_000);
             }
