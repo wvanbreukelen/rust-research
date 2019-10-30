@@ -30,16 +30,21 @@ use cortex_m::peripheral::Peripherals as CorePeripherals;
 use cortex_m_rt::entry;
 //extern crate sam3x8e;
 
-#[macro_use]
-extern crate static_assertions;
+//#[macro_use]
+//extern crate static_assertions;
 
 pub use sam3x8e as target;
 
 mod pin;
 mod time;
-//mod serial;
-use crate::pin::{Configuration, Write};
+mod serial;
+use crate::pin::{Configuration, Write, Read};
 use crate::time::Delay;
+
+pub struct Blink<PORT> {
+    state: bool,
+    pin: pin::Pin<pin::IsEnabled, pin::IsOutput, pin::IsValid, PORT>
+}
 
 // Help: https://rust-embedded.github.io/book/start/registers.html
 #[entry]
@@ -48,11 +53,11 @@ fn main() -> ! {
         let mut on = false;
         let pmc = dp.PMC;
         let watchdog = dp.WDT;
-        let _uart = dp.UART;
+        //let _uart = dp.UART;
+
+        //let mut dev = pin::Device {pioa: dp.PIOA, piob: dp.PIOB, pioc: dp.PIOC, piod: dp.PIOD};
 
         //let pin13 = pin::Pin::create<piob>();
-
-        //create_pin!(piob);
 
         pmc.pmc_pcer0
             .write_with_zero(|w| unsafe { w.bits(0x3F << 11) });
@@ -65,13 +70,23 @@ fn main() -> ! {
         // Turnoff onboard LED.
         //piob.codr.write_with_zero(|w| w.p27().set_bit() );
 
-        let pin13 = pin::create(&dp.PIOB, 1 << 27); // This pin has now ownership over dp.PIOB
+         // This pin has now ownership over dp.PIOB
                                                     //pin13.enable();
 
-        let _ = size_of::<pin::Pin<target::PIOB, pin::IsDisabled, pin::Unknown>>();
-        const_assert_eq!(0, size_of::<pin::IsEnabled>());
+        //let _size = size_of::<pin::Pin<target::PIOB, pin::IsDisabled, pin::Unknown>>();
+        //const_assert_eq!(0, size_of::<pin::IsEnabled>());
 
-        let pin13_output = pin13.as_output();
+        //let pin13_output = pin13.as_output();
+
+        //pin13_output.disable(&dp.PIOB);
+
+        //let pin13_input = pin13_output.as_input(&dp.PIOB);
+
+        //pin::pin1
+
+        //pin13_output.set_low();
+
+        let pin13_output = pin::create(1 << 27, target::PIOB::ptr()).as_output();
 
         // Do something.
         let mut t = time::Time::syst(cp.SYST);
@@ -82,9 +97,12 @@ fn main() -> ! {
             if t.has_wrapped() {
                 // Turn on the LED!
                 if on {
-                    pin13_output.set_state(true);
+                    pin13_output.set_high();
+                    //dp.PIOB.codr.write_with_zero(|w| w.p27().set_bit() );
                 } else {
-                    pin13_output.set_state(false);
+                    pin13_output.set_low();
+                    //pin13_inp.get_state(&dp.PIOB);
+                    //dp.PIOB.sodr.write_with_zero(|w| w.p27().set_bit() );
                 }
                 on = !on;
                 t.delay_ms(2_000_000);

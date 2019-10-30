@@ -1,54 +1,41 @@
 pub use cortex_m::peripheral::syst;
 pub use sam3x8e as target;
 
-pub struct SerialHandle<HWUART> {
-    hw_uart: HWUART,
-    clock_divider: u32
+use crate::pin;
+
+//mod pin;
+
+pub struct Serial {
+    handle: target::UART,
+    clock_div: u32
 }
 
-pub trait SerialControl {
+pub trait Configure {
     fn disable();
 }
 
-pub trait SerialRead {
+pub trait Read {
     fn read_byte(&self) -> char;
-    fn is_available(&self) -> bool;
+    //fn read_string() -> str;
 }
 
-pub trait SerialWrite {
-    fn write_byte(&mut self, b: char);
+pub trait Write {
+    fn write_byte(&self, b: char);
 }
 
-impl SerialControl for SerialHandle<target::UART> {
-    fn disable() {
+// Pin<ENABLED, DIRECTION, VALID>
+//pub fn create_serial_handle<'a>(_handle: target::UART, pin_tx: pin::Pin<pin::IsEnabled, pin::IsOutput, pin::IsValid>, pin_rx: pin::Pin<pin::IsEnabled, pin::IsInput, pin::IsValid>, baudrate: u32) -> Serial {
+pub fn create_serial_handle(_handle: target::UART, baudrate: u32) -> Serial {
+    // Claim the required pins.
 
-    }
-}
+    // Set pins to right mode.
 
-impl SerialRead for SerialHandle<target::UART> {
-    fn read_byte(&self) -> char {
+    // Setup the UART.
 
-    }
-
-    fn is_available(&self) -> bool {
-        false
-    }
-}
-
-impl SerialWrite for SerialHandle<target::UART> {
-    fn write_byte(&mut self, b: char) {}
-}
-
-
-pub fn create_serial_handle(_hw_uart: target::UART, pin_tx: Pin, pin_rx: Pin baudrate: u32) -> SerialHandle<target::UART> {
-    // Maybe check the baudrate?
-
-    // Setup the UART
-
-    unsafe { sam3x8e::piob::codr::write(1 << 27) }
+    //unsafe { sam3x8e::piob::codr::write(1 << 27) }
 
     // Return a new instance
-    return SerialHandle { hw_uart: _hw_uart, clock_divider: 5241600 / baudrate};
+    return Serial { handle: _handle, clock_div: (5241600 / baudrate) };
 }
 
 // Macro for setting up a serial device other then UART.
