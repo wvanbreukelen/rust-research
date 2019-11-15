@@ -7,27 +7,40 @@ use crate::pin;
 
 pub struct Serial {
     handle: target::UART,
-    clock_div: u32
+    clock_div: u32,
 }
 
-pub trait Configure {
-    fn disable();
-}
+impl Serial {
+    pub fn disable(&self) {}
 
-pub trait Read {
-    fn read_byte(&self) -> char;
-    //fn read_string() -> str;
-}
+    pub fn begin(&self) {
+        self.handle.cr.write_with_zero(|w| unsafe {
+            w.rstrx().set_bit();
+            w.rsttx().set_bit();
+            w.rxdis().set_bit();
+            w.txdis().set_bit()
+        });
 
-pub trait Write {
-    fn write_byte(&self, b: char);
+        self.handle
+            .brgr
+            .write_with_zero(|w| unsafe { w.bits(clock_div) });
+
+        // Disable parity bits.
+        self.handle.mr.write_with_zero(|w| unsafe { w.par().no() });
+    }
 }
 
 // Pin<ENABLED, DIRECTION, VALID>
 //pub fn create_serial_handle<'a>(_handle: target::UART, pin_tx: pin::Pin<pin::IsEnabled, pin::IsOutput, pin::IsValid>, pin_rx: pin::Pin<pin::IsEnabled, pin::IsInput, pin::IsValid>, baudrate: u32) -> Serial {
-pub fn create_serial_handle(_handle: target::UART, baudrate: u32) -> Serial {
-    // Claim the required pins.
+// Pin: IsDisabled, Unknown, IsValid
 
+// Disadvantage of Rust. We need to be explicit abount all generic parameters. We cannot perform function overloading.
+pub fn create<P1, P2>(
+    _handle: target::UART,
+    baudrate: u32,
+    pin_tx: pin::Pin<P1, pin::IsDisabled, pin::Unknown, pin::IsValid>,
+    pin_rx: pin::Pin<P2, pin::IsDisabled, pin::Unknown, pin::IsValid>,
+) -> Serial {
     // Set pins to right mode.
 
     // Setup the UART.
@@ -35,8 +48,10 @@ pub fn create_serial_handle(_handle: target::UART, baudrate: u32) -> Serial {
     //unsafe { sam3x8e::piob::codr::write(1 << 27) }
 
     // Return a new instance
-    return Serial { handle: _handle, clock_div: (5241600 / baudrate) };
+    return Serial {
+        handle: _handle,
+        clock_div: (5241600 / baudrate),
+    };
 }
 
 // Macro for setting up a serial device other then UART.
-

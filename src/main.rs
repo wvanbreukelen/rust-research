@@ -36,15 +36,10 @@ use cortex_m_rt::entry;
 pub use sam3x8e as target;
 
 mod pin;
-mod time;
 mod serial;
-use crate::pin::{Configuration, Write, Read};
+mod time;
+use crate::pin::{Configuration, Writer};
 use crate::time::Delay;
-
-pub struct Blink<PORT> {
-    state: bool,
-    pin: pin::Pin<pin::IsEnabled, pin::IsOutput, pin::IsValid, PORT>
-}
 
 // Help: https://rust-embedded.github.io/book/start/registers.html
 #[entry]
@@ -53,40 +48,24 @@ fn main() -> ! {
         let mut on = false;
         let pmc = dp.PMC;
         let watchdog = dp.WDT;
-        //let _uart = dp.UART;
-
-        //let mut dev = pin::Device {pioa: dp.PIOA, piob: dp.PIOB, pioc: dp.PIOC, piod: dp.PIOD};
-
-        //let pin13 = pin::Pin::create<piob>();
 
         pmc.pmc_pcer0
             .write_with_zero(|w| unsafe { w.bits(0x3F << 11) });
 
         // Disable the watchdog.
         watchdog.mr.write(|w| w.wddis().set_bit());
-        // Enable output to p27.
-        //piob.oer.write_with_zero(|w| w.p27().set_bit());
 
-        // Turnoff onboard LED.
-        //piob.codr.write_with_zero(|w| w.p27().set_bit() );
+        let p1 = pin::create(&dp.PIOB, 1 << 27);
+        let p2 = pin::create(&dp.PIOA, 1 << 27);
 
-         // This pin has now ownership over dp.PIOB
-                                                    //pin13.enable();
+        // IsDisabled, Unknown, IsValid
+        let mut ser = serial::create(dp.UART, 115200, p1, p2).begin();
 
-        //let _size = size_of::<pin::Pin<target::PIOB, pin::IsDisabled, pin::Unknown>>();
-        //const_assert_eq!(0, size_of::<pin::IsEnabled>());
+        ser.write();
 
-        //let pin13_output = pin13.as_output();
+        let pin13 = pin::create(&dp.PIOB, 1 << 27);
 
-        //pin13_output.disable(&dp.PIOB);
-
-        //let pin13_input = pin13_output.as_input(&dp.PIOB);
-
-        //pin::pin1
-
-        //pin13_output.set_low();
-
-        let pin13_output = pin::create(1 << 27, target::PIOB::ptr()).as_output();
+        let pin13_output = pin13.as_output();
 
         // Do something.
         let mut t = time::Time::syst(cp.SYST);
@@ -98,7 +77,7 @@ fn main() -> ! {
                 // Turn on the LED!
                 if on {
                     pin13_output.set_high();
-                    //dp.PIOB.codr.write_with_zero(|w| w.p27().set_bit() );
+                //dp.PIOB.codr.write_with_zero(|w| w.p27().set_bit() );
                 } else {
                     pin13_output.set_low();
                     //pin13_inp.get_state(&dp.PIOB);
