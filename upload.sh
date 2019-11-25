@@ -1,6 +1,6 @@
 ELF=my_due_project
 TARGET=thumbv7m-none-eabi
-SERIAL_PORT=cu.usbmodem14801 #COM10
+SERIAL_PORT=cu.usbmodem14D01 #COM10
 EXTRA_COMPILE_ARGS=""#--release
 #cargo size --bin $ELF -- -A
 #cargo objcopy --bin $ELF -- -Obinary /tmp/$ELF.bin
@@ -40,3 +40,7 @@ elif [[ "$OSTYPE" == "msys"* ]]; then
 else
     ./tools/bossac-arduino --port=$SERIAL_PORT --info -Ufalse -e -w -v -b build/$ELF.bin -R
 fi
+
+sleep 1.0
+
+screen /dev/$SERIAL_PORT 9600 –L

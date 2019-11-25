@@ -1,3 +1,5 @@
+//#![deny(warnings)]
+
 pub use cortex_m::peripheral::syst;
 pub use sam3x8e as target;
 use nb;
@@ -16,7 +18,7 @@ pub struct Serial {
     clock_div: u16,
 }
 
-enum SerialError {
+pub enum SerialError {
     TxNotReady,
     RxEmpty,
     Timeout
@@ -31,16 +33,11 @@ impl Serial {
 
     pub fn new<'a, P1, P2>(
         _handle: target::UART,
-        pio: &'a target::PIOA,
         baudrate: u32,
-        pin_tx: pin::Pin<P1, pin::IsDisabled, pin::Unknown, pin::IsValid>,
-        pin_rx: pin::Pin<P2, pin::IsDisabled, pin::Unknown, pin::IsValid>,
+        _pin_tx: pin::Pin<P1, pin::IsDisabled, pin::Unknown, pin::IsValid>,
+        _pin_rx: pin::Pin<P2, pin::IsDisabled, pin::Unknown, pin::IsValid>,
     ) -> Self {
-        // Set pins to right mode.
-        pio.pdr.write_with_zero(|w| w.p8().set_bit());
-        pio.absr.write_with_zero(|w| w.p8().set_bit());
-        pio.pdr.write_with_zero(|w| w.p9().set_bit());
-        pio.absr.write_with_zero(|w| w.p9().set_bit());
+  
 
         // Setup the UART.
 
@@ -48,7 +45,7 @@ impl Serial {
 
         // Costs runtime performance as the evaluation is upon compile-time.
         let div = calc_divider_safe(baudrate);
-        assert!(div.is_none());
+        //assert!(div.is_none());
 
         // Return a new instance
         return Self {
@@ -59,33 +56,58 @@ impl Serial {
 
     pub fn disable(&self) {}
 
-    pub fn begin(&self) {
+    pub fn begin<'a>(&self, pio: &'a target::PIOA, pmc: &'a target::PMC) {
+        pmc.pmc_pcer0
+            .write_with_zero(|w| w.
+            pid11().set_bit()); // Enable PIOA
+
+        // Set pins to right mode.
+        pio.pdr.write_with_zero(|w| w.p8().set_bit());
+        pio.absr.write_with_zero(|w| w.p8().clear_bit());
+        pio.pdr.write_with_zero(|w| w.p9().set_bit());
+        pio.absr.write_with_zero(|w| w.p9().clear_bit());
+
+        pmc.pmc_pcer0.write_with_zero(|w| w.pid8().set_bit()); // Enable UART
+
         // Disable UART
         self.handle.cr.write_with_zero(|w|
-            w.rstrx().set_bit().rsttx().set_bit().rxdis().set_bit().txdis().set_bit()
+            w.
+            rstrx().set_bit().
+            rsttx().set_bit().
+            rxdis().set_bit().
+            txdis().set_bit()
         );
 
+
         // Set the baudrate
+        // self.handle
+        //    .brgr
+        //    .write_with_zero(|w| unsafe { w.cd().bits(self.clock_div) });
         self.handle
-            .brgr
-            .write_with_zero(|w| unsafe { w.cd().bits(self.clock_div) });
+           .brgr
+           .write_with_zero(|w| unsafe { w.cd().bits(546) }); // 9600 baud
+
 
         // Disable parity bits.
         self.handle.mr.write_with_zero(|w| w.par().no() );
 
+
+
         // Disable interrupts.
-        self.handle.idr.write_with_zero(|w| w
-            .rxrdy().set_bit()
-            .txrdy().set_bit()
-            .endrx().set_bit()
-            .endtx().set_bit()
-            .ovre().set_bit()
-            .frame().set_bit()
-            .pare().set_bit()
-            .txempty().set_bit()
-            .txbufe().set_bit()
-            .rxbuff().set_bit()
-        );
+        // self.handle.idr.write_with_zero(|w| w
+        //     .rxrdy().set_bit()
+        //     .txrdy().set_bit()
+        //     .endrx().set_bit()
+        //     .endtx().set_bit()
+        //     .ovre().set_bit()
+        //     .frame().set_bit()
+        //     .pare().set_bit()
+        //     .txempty().set_bit()
+        //     .txbufe().set_bit()
+        //     .rxbuff().set_bit()
+        // );
+
+        self.handle.idr.write_with_zero(|w| unsafe {w.bits(0xFFFFFFFF)}); // Disable interrupts.
 
         // Enable UART
         self.handle.cr.write_with_zero(|w|
@@ -125,25 +147,23 @@ impl Serial {
         return Ok(())
     }
 
-    pub unsafe fn write_str_blocking(&self, ptr: *const u8) -> nb::Result<(), SerialError>  {
+    pub unsafe fn write_str_blocking(&self, mut ptr: *const u8)  {
         while *ptr != b'\0' { // Highly unsafe
             match nb::block!(self.write_byte(*ptr)) {
-                Err(e @ SerialError::Timeout) => return Err(nb::Error::Other(e)),
-                _ => {}
+               Err(_e @ SerialError::Timeout) => return,
+               _ => {}
             }
+            ptr = ptr.add(1);
         }
-
-        return Ok(())
     }
 
-    fn write_byte(&self, ch: u8) -> nb::Result<(), SerialError> {
-        if !self.handle.sr.read().txrdy().bit() {
-            return Err(nb::Error::Other(SerialError::TxNotReady));
+    pub fn write_byte(&self, ch: u8) -> nb::Result<(), SerialError> {
+        if !self.handle.sr.read().txrdy().bit_is_set() {
+          return Err(nb::Error::Other(SerialError::TxNotReady));
         }
 
-        //self.handle.thr.write_with_zero(|w| unsafe {w.bits(ch as u32)});
-        self.handle.thr.write_with_zero(|w| unsafe { w.txchr().bits(ch) });
-
+        //self.handle.thr.write_with_zero(|w| unsafe { w.txchr().bits(ch) });
+        self.handle.thr.write_with_zero(|w| unsafe {w.bits(ch as u32)});
         return Ok(())
     }
 
