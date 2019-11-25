@@ -59,7 +59,7 @@ fn main() -> ! {
         let p2 = pin::create(&dp.PIOA, 1 << 27);
 
         // IsDisabled, Unknown, IsValid
-        let mut ser = serial::create(dp.UART, &dp.PIOA, 115200, p1, p2).begin();
+        let mut ser = serial::Serial::new(dp.UART, &dp.PIOA, 115200, p1, p2).begin();
 
         //ser.write();
 
