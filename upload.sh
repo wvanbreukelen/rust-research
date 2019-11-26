@@ -7,8 +7,10 @@ EXTRA_COMPILE_ARGS=""#--release
 
 #bash -c "./compile.sh"
 
-cargo size --target $TARGET --bin  $ELF -- -A
-cargo objcopy --target $TARGET --bin $ELF -- -Obinary build/$ELF.bin
+#cargo size --target $TARGET --bin  $ELF -- -A
+#cargo objcopy --target $TARGET --bin $ELF -- -Obinary build/$ELF.bin
+
+cargo build --target $TARGET
 
 ls /dev/ | grep cu
 #stty -f /dev/cu.usbmodem14801 speed 1200 cs8 -cstopb -parenb; sleep 1.0
@@ -43,4 +45,4 @@ fi
 
 sleep 1.0
 
-screen /dev/$SERIAL_PORT 9600 –L
+#screen /dev/$SERIAL_PORT 9600 –L

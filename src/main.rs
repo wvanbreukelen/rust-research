@@ -41,6 +41,10 @@ mod time;
 use crate::pin::{Configuration, Writer};
 use crate::time::Delay;
 
+
+
+
+
 // Help: https://rust-embedded.github.io/book/start/registers.html
 #[entry]
 fn main() -> ! {
@@ -49,32 +53,37 @@ fn main() -> ! {
         let pmc = dp.PMC;
         let watchdog = dp.WDT;
 
+        // Do something.
+        let mut t = time::Time::syst(cp.SYST);
+
         //pmc.pmc_pcer0
         //    .write_with_zero(|w| unsafe { w.bits(0x3F << 11) });
 
 
         // Disable the watchdog.
-        watchdog.mr.write(|w| w.wddis().set_bit());
+        //watchdog.mr.write(|w| w.wddis().set_bit());
 
-        pmc.pmc_pcer0
-            .write_with_zero(|w| w.
-            pid11().set_bit().
-            pid12().set_bit()); // Enable PIOA, PIOB
+        // Init the clock.
+        pmc.pmc_mckr.write_with_zero(|w| unsafe {w.bits(0x01)});
 
 
         let p1 = pin::create(&dp.PIOB, 1 << 27);
         let p2 = pin::create(&dp.PIOA, 1 << 27);
 
         // IsDisabled, Unknown, IsValid
-        let ser = serial::Serial::new(dp.UART, 115200, p1, p2);
+        let ser = serial::Serial::new(dp.UART, &pmc, 115200, p1, p2);
 
         ser.begin(&dp.PIOA, &pmc);
+
+        // pmc.pmc_pcer0
+        //     .write_with_zero(|w| w.
+        //     pid11().set_bit().
+        //     pid12().set_bit()); // Enable PIOA, PIOB
 
         let pin13 = pin::create(&dp.PIOB, 1 << 27);
         let pin13_output = pin13.as_output();
 
-        // Do something.
-        let mut t = time::Time::syst(cp.SYST);
+
 
         //t.delay_ms(4_000_000);∂∂
 
@@ -90,20 +99,21 @@ fn main() -> ! {
         t.delay_ms(2_000_000);
 
         loop {
+            match ser.read_byte() {
+                Ok(x) => {},
+                _ => {}
+            }
             if t.has_wrapped() {
                 // Turn on the LED!
                 if on {
-                    //unsafe { ser.write_str_blocking(b"Turning LED on...".as_ptr()) };
-                    if ser.write_byte(0xA0 as u8).is_ok() {
-                        pin13_output.set_high();
-                    }
+                    unsafe { ser.write_str_blocking(b"Turning LED on...\n".as_ptr()) };
+                    pin13_output.set_high();
                     
                 //dp.PIOB.codr.write_with_zero(|w| w.p27().set_bit() );
                 } else {
-                    //unsafe { ser.write_str_blocking(b"Turning LED off...".as_ptr()) };
-                    if ser.write_byte(0xA0 as u8).is_ok() {
-                        pin13_output.set_low();
-                    }
+                    unsafe { ser.write_str_blocking(b"Turning LED off...\n".as_ptr()) };
+                    pin13_output.set_low();
+
                     //pin13_inp.get_state(&dp.PIOB);
                     //dp.PIOB.sodr.write_with_zero(|w| w.p27().set_bit() );
                 }
