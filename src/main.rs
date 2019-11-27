@@ -22,9 +22,9 @@
 //         stm32f469
 //         stm32f479");
 //#![deny(unsafe_code)]
+extern crate cortex_m;
 extern crate panic_halt;
 
-use core::mem::size_of;
 pub use cortex_m::peripheral::syst;
 use cortex_m::peripheral::Peripherals as CorePeripherals;
 use cortex_m_rt::entry;
@@ -38,12 +38,8 @@ pub use sam3x8e as target;
 mod pin;
 mod serial;
 mod time;
-use crate::pin::{Configuration, Writer};
+use crate::pin::{Configuration, Output};
 use crate::time::Delay;
-
-
-
-
 
 // Help: https://rust-embedded.github.io/book/start/registers.html
 #[entry]
@@ -51,71 +47,41 @@ fn main() -> ! {
     if let (Some(cp), Some(dp)) = (CorePeripherals::take(), target::Peripherals::take()) {
         let mut on = false;
         let pmc = dp.PMC;
+        //let pmc: &'static mut bool = singleton!(: bool = false).unwrap();
         let watchdog = dp.WDT;
 
         // Do something.
         let mut t = time::Time::syst(cp.SYST);
 
-        //pmc.pmc_pcer0
-        //    .write_with_zero(|w| unsafe { w.bits(0x3F << 11) });
-
-
         // Disable the watchdog.
-        //watchdog.mr.write(|w| w.wddis().set_bit());
+        watchdog.mr.write(|w| w.wddis().set_bit());
 
         // Init the clock.
-        pmc.pmc_mckr.write_with_zero(|w| unsafe {w.bits(0x01)});
+        pmc.pmc_mckr.write_with_zero(|w| unsafe { w.bits(0x01) });
 
+        let p9 = pin::create(&dp.PIOA, 1 << 9);
+        let p8 = pin::create(&dp.PIOA, 1 << 8);
 
-        let p1 = pin::create(&dp.PIOB, 1 << 27);
-        let p2 = pin::create(&dp.PIOA, 1 << 27);
-
-        // IsDisabled, Unknown, IsValid
-        let ser = serial::Serial::new(dp.UART, &pmc, 115200, p1, p2);
+        let ser = serial::Serial::new(dp.UART, &pmc, 115200, p9.as_output(), p8.as_input());
+        // Serial has now ownership over p8 and p9.
 
         ser.begin(&dp.PIOA, &pmc);
-
-        // pmc.pmc_pcer0
-        //     .write_with_zero(|w| w.
-        //     pid11().set_bit().
-        //     pid12().set_bit()); // Enable PIOA, PIOB
 
         let pin13 = pin::create(&dp.PIOB, 1 << 27);
         let pin13_output = pin13.as_output();
 
-
-
-        //t.delay_ms(4_000_000);∂∂
-
-        //while !t.has_wrapped() {};
-        
-        //unsafe { ser.write_str_blocking(b"Turning LED on...".as_ptr()) };
-        //ser.write();
-
-
-
-        
-
-        t.delay_ms(2_000_000);
+        t.delay_ms(8_000_000);
 
         loop {
-            match ser.read_byte() {
-                Ok(x) => {},
-                _ => {}
-            }
+            //ser.write_blocking(ser.read_blocking());
             if t.has_wrapped() {
                 // Turn on the LED!
                 if on {
-                    unsafe { ser.write_str_blocking(b"Turning LED on...\n".as_ptr()) };
+                    ser.write_str_blocking("Turning LED on...\r\n");
                     pin13_output.set_high();
-                    
-                //dp.PIOB.codr.write_with_zero(|w| w.p27().set_bit() );
                 } else {
-                    unsafe { ser.write_str_blocking(b"Turning LED off...\n".as_ptr()) };
+                    ser.write_str_blocking("Turning LED off...\r\n");
                     pin13_output.set_low();
-
-                    //pin13_inp.get_state(&dp.PIOB);
-                    //dp.PIOB.sodr.write_with_zero(|w| w.p27().set_bit() );
                 }
                 on = !on;
                 t.delay_ms(2_000_000);

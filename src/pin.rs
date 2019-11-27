@@ -14,9 +14,9 @@ pub struct IsInvalid;
 pub struct Unknown;
 
 #[macro_use]
-
 // Macro for PIOA, PIOB, PIOC, PIOD generation
 // https://stackoverflow.com/questions/51932944/how-to-match-rusts-if-expressions-in-a-macro
+#[derive(Copy, Clone)]
 pub struct Pin<'a, PORT, ENABLED, DIRECTION, VALID> {
     port: &'a PORT, // _CODR
     pin_mask: u32,
@@ -36,11 +36,24 @@ pub trait Configuration<PORT, STATE, DIRECTION, VALID> {
     fn handoff(&self) -> Pin<PORT, IsDisabled, Unknown, IsInvalid>;
 }
 
-pub trait Writer {
+pub trait Output {
     fn set_state(&self, s: bool);
     fn set_high(&self);
     fn set_low(&self);
+
+    fn enable_pullup(&self);
+    fn disable_pullup(&self);
+
+    fn switch_to_a(&self);
+}
+
+pub trait Input {
     fn get_state(&self) -> bool;
+
+    fn enable_pullup(&self);
+    fn disable_pullup(&self);
+
+    fn switch_to_a(&self);
 }
 
 pub fn create<'a, PORT>(
@@ -55,6 +68,7 @@ pub fn create<'a, PORT>(
         valid: IsValid,
     };
 }
+
 // Macro for PIOA, PIOB, PIOC, PIOD generation
 macro_rules! add_control_pio {
     ($PIOX:ident) => {
@@ -114,7 +128,7 @@ macro_rules! add_control_pio {
             }
         }
 
-        impl Writer for Pin<'_, target::$PIOX, IsEnabled, IsOutput, IsValid> {
+        impl Output for Pin<'_, target::$PIOX, IsEnabled, IsOutput, IsValid> {
             fn set_state(&self, s: bool) {
                 if s {
                     self.port
@@ -125,6 +139,18 @@ macro_rules! add_control_pio {
                         .codr
                         .write_with_zero(|w| unsafe { w.bits(self.pin_mask) });
                 }
+            }
+
+            fn enable_pullup(&self) {
+                self.port
+                    .puer
+                    .write_with_zero(|w| unsafe { w.bits(self.pin_mask) });
+            }
+
+            fn disable_pullup(&self) {
+                self.port
+                    .pudr
+                    .write_with_zero(|w| unsafe { w.bits(self.pin_mask) });
             }
 
             fn set_high(&self) {
@@ -139,8 +165,50 @@ macro_rules! add_control_pio {
                     .write_with_zero(|w| unsafe { w.bits(self.pin_mask) });
             }
 
+            fn switch_to_a(&self) {
+                // self.port
+                //     .pdr
+                //     .write_with_zero(|w| w.p9().set_bit().p8().set_bit()); // Change from p8 and p9 to mask.
+                self.port
+                    .pdr
+                    .write_with_zero(|w| unsafe { w.bits(self.pin_mask) });
+                let cur_absr = self.port.absr.read().bits();
+                self.port
+                    .absr
+                    .write_with_zero(|w| unsafe { w.bits(cur_absr & (!self.pin_mask)) });
+                // Not working...
+            }
+        }
+
+        impl Input for Pin<'_, target::$PIOX, IsEnabled, IsInput, IsValid> {
+            fn switch_to_a(&self) {
+                // self.port
+                //     .pdr
+                //     .write_with_zero(|w| w.p9().set_bit().p8().set_bit()); // Change from p8 and p9 to mask.
+                self.port
+                    .pdr
+                    .write_with_zero(|w| unsafe { w.bits(self.pin_mask) });
+                let cur_absr = self.port.absr.read().bits();
+                self.port
+                    .absr
+                    .write_with_zero(|w| unsafe { w.bits(cur_absr & (!self.pin_mask)) });
+                // Not working...
+            }
+
             fn get_state(&self) -> bool {
                 return true;
+            }
+
+            fn enable_pullup(&self) {
+                self.port
+                    .puer
+                    .write_with_zero(|w| unsafe { w.bits(self.pin_mask) });
+            }
+
+            fn disable_pullup(&self) {
+                self.port
+                    .pudr
+                    .write_with_zero(|w| unsafe { w.bits(self.pin_mask) });
             }
         }
     };

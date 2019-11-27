@@ -1,1 +1,1 @@
-[{"node":"UART","expanded":true,"format":0},{"node":"UART.MR","expanded":true,"format":0},{"node":"UART.SR","expanded":true,"format":0},{"node":"UART.RHR","expanded":true,"format":0},{"node":"UART.THR","expanded":true,"format":0},{"node":"UART.BRGR.CD","format":2},{"node":"PIOA","expanded":true,"format":0},{"node":"PIOA.ABSR","expanded":true,"format":0}]
+[{"node":"PIOA","expanded":true,"format":0},{"node":"PIOA.PSR","expanded":true,"format":0},{"node":"PIOA.ABSR","expanded":true,"format":0}]
