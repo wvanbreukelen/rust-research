@@ -9,6 +9,8 @@ use nb;
 pub use sam3x8e as target;
 
 use crate::pin;
+use crate::pmc::PMC;
+use crate::peripherals;
 
 //mod pin;
 
@@ -23,10 +25,11 @@ pub struct Serial<'pins> {
     pin_rx: pin::Pin<'pins, target::PIOA, pin::IsEnabled, pin::IsInput>,
 }
 
-pub enum SerialError {
-    TxNotReady,
-    RxEmpty,
-    Timeout,
+trait HWWriter {
+    fn write_byte<'b>(&self, ch: u8) -> nb::Result<(), ()>;
+    fn read_byte(&self) -> nb::Result<u8, ()>;
+    fn disable(&self);
+    fn enable(&self);
 }
 
 impl<'pins> Serial<'pins> {
@@ -38,7 +41,6 @@ impl<'pins> Serial<'pins> {
 
     pub fn new(
         _handle: target::UART,
-        pmc: &target::PMC,
         baudrate: u32,
         _pin_tx: pin::Pin<'pins, target::PIOA, pin::IsEnabled, pin::IsOutput>,
         _pin_rx: pin::Pin<'pins, target::PIOA, pin::IsEnabled, pin::IsInput>,
@@ -46,57 +48,36 @@ impl<'pins> Serial<'pins> {
         // Return a new instance
         return Self {
             handle: _handle,
-            clock_div: calc_divider_safe(main_clock_frequency_hz(pmc), baudrate),
+            clock_div: calc_uart_divider(main_clock_frequency_hz(), baudrate),
             pin_tx: _pin_tx,
             pin_rx: _pin_rx,
         };
     }
 
-    pub fn disable(&self) {}
-
-    pub fn begin<'b>(&self, pio: &'b target::PIOA, pmc: &'b target::PMC) {
+    pub fn begin<'b>(&self) {
+        // Set pins into right mode
         self.pin_tx.enable_pullup();
         self.pin_tx.switch_to_a();
-
         self.pin_rx.enable_pullup();
         self.pin_rx.switch_to_a();
 
-        pmc.pmc_pcer0
-            .write_with_zero(|w| w.pid11().set_bit().pid12().set_bit()); // Enable PIOA, PIOB
-                                                                         // Set pins to right mode.
-
-        //pio.puer.write_with_zero(|w| w.p9().set_bit()); // Tx pin pullup
-
-        pmc.pmc_pcer0.write_with_zero(|w| w.pid8().set_bit()); // Enable UART clock
+        PMC.enable_peripheral(peripherals::Peripheral::Uart); // Enable UART
+        PMC.enable_peripheral(peripherals::Peripheral::PioA); // Enable PIOA
+        PMC.enable_peripheral(peripherals::Peripheral::PioB); // Enable PIOA
 
         // Disable UART
-        self.handle.cr.write_with_zero(|w| {
-            w.rstrx()
-                .set_bit()
-                .rsttx()
-                .set_bit()
-                .rxdis()
-                .set_bit()
-                .txdis()
-                .set_bit()
-        });
-
-        // Set the baudrate
-        self.handle
-            .brgr
-            .write_with_zero(|w| unsafe { w.bits(self.clock_div) });
+        self.disable();
 
         // Disable parity bits, go in normal mode.
         self.handle.mr.write_with_zero(|w| w.par().no());
 
+        // Disable interrupts.
         self.handle
             .idr
             .write_with_zero(|w| unsafe { w.bits(0xFFFFFFFF) }); // Disable interrupts.
 
         // Enable UART
-        self.handle
-            .cr
-            .write_with_zero(|w| w.txen().set_bit().rxen().set_bit());
+        self.enable();
     }
 
     pub fn write_array_blocking(&self, arr: &[u8]) {
@@ -108,7 +89,6 @@ impl<'pins> Serial<'pins> {
     pub fn read_array_blocking(&self, arr: &mut [u8]) -> nb::Result<(), ()> {
         for ch in arr.iter_mut() {
             match self.read_byte_blocking() {
-                //Err(e @ SerialError::Timeout) => return Err(()),
                 Some(ch_read) => *ch = ch_read,
                 None => {}
             }
@@ -134,6 +114,35 @@ impl<'pins> Serial<'pins> {
         }
     }
 
+}
+
+impl HWWriter for Serial<'_> {
+    fn enable(&self) {
+        // Set the baudrate
+        self.handle
+            .brgr
+            .write_with_zero(|w| unsafe { w.bits(self.clock_div) });
+
+        // Enable UART
+        self.handle
+            .cr
+            .write_with_zero(|w| w.txen().set_bit().rxen().set_bit());
+    }
+
+    fn disable(&self) {
+        // Disable UART
+        self.handle.cr.write_with_zero(|w| {
+            w.rstrx()
+                .set_bit()
+                .rsttx()
+                .set_bit()
+                .rxdis()
+                .set_bit()
+                .txdis()
+                .set_bit()
+        });
+    }
+
     fn write_byte<'b>(&self, ch: u8) -> nb::Result<(), ()> {
         if !self.handle.sr.read().txrdy().bit_is_set() {
             return Err(nb::Error::WouldBlock); // Or Error::WouldBlock
@@ -142,7 +151,6 @@ impl<'pins> Serial<'pins> {
         self.handle
             .thr
             .write_with_zero(|w| unsafe { w.txchr().bits(ch) });
-        //self.handle.thr.write_with_zero(|w| unsafe {w.bits(0xFF as u32)});
         return Ok(());
     }
 
@@ -155,21 +163,16 @@ impl<'pins> Serial<'pins> {
     }
 }
 
-fn main_clock_frequency_hz<'b>(pmc: &'b target::PMC) -> u32 {
+fn main_clock_frequency_hz<'b>() -> u32 {
     let main_clock_frequency_within_16_slow_clock_cycles = unsafe {
-        while pmc.ckgr_mcfr.read().bits() & MAINFRDY == 0 {}
-        pmc.ckgr_mcfr.read().bits() & MAINF_MASK
+        while PMC.get_master_clk() & MAINFRDY == 0 {}
+        PMC.get_master_clk() & MAINF_MASK
     };
 
     main_clock_frequency_within_16_slow_clock_cycles * SLOW_CLOCK_FREQUENCY_HZ / 16
 }
 
-// fn calc_divider_safe(clock: u32, baudrate: u32) -> Option<u16> {
-//     return u16::try_from(clock / (baudrate * 16) as u32).ok();
-// }
-
-fn calc_divider_safe(clock: u32, baudrate: u32) -> u32 {
-    //return u16::try_from(clock / (baudrate * 16) as u32).ok();
+const fn calc_uart_divider(clock: u32, baudrate: u32) -> u32 {
     clock / (baudrate * 16)
 }
 
