@@ -17,26 +17,23 @@ pub struct Unknown;
 // Macro for PIOA, PIOB, PIOC, PIOD generation
 // https://stackoverflow.com/questions/51932944/how-to-match-rusts-if-expressions-in-a-macro
 #[derive(Copy, Clone)]
-pub struct Pin<'a, PORT, ENABLED, DIRECTION, VALID> {
+pub struct Pin<'a, PORT, ENABLED, DIRECTION> {
     port: &'a PORT, // _CODR
     pin_mask: u32,
     enabled: ENABLED,
     direction: DIRECTION, // is output
-    // is input
-    // is bidirectional
-    valid: VALID,
 }
 
-pub trait Configuration<PORT, STATE, DIRECTION, VALID> {
-    fn disable(&self) -> Pin<PORT, IsDisabled, Unknown, IsValid>;
+pub trait Configuration<PORT, STATE, DIRECTION> {
+    fn disable(&self) -> Pin<PORT, IsDisabled, Unknown>;
 
-    fn as_output(&self) -> Pin<PORT, IsEnabled, IsOutput, IsValid>;
-    fn as_input(&self) -> Pin<PORT, IsEnabled, IsInput, IsValid>;
+    fn as_output(&self) -> Pin<PORT, IsEnabled, IsOutput>;
+    fn as_input(&self) -> Pin<PORT, IsEnabled, IsInput>;
 
-    fn handoff(&self) -> Pin<PORT, IsDisabled, Unknown, IsInvalid>;
+    fn handoff(&self) -> Pin<PORT, IsDisabled, Unknown>;
 }
 
-pub trait Output {
+pub trait OutputPin {
     fn set_state(&self, s: bool);
     fn set_high(&self);
     fn set_low(&self);
@@ -47,7 +44,7 @@ pub trait Output {
     fn switch_to_a(&self);
 }
 
-pub trait Input {
+pub trait InputPin {
     fn get_state(&self) -> bool;
 
     fn enable_pullup(&self);
@@ -56,26 +53,22 @@ pub trait Input {
     fn switch_to_a(&self);
 }
 
-pub fn create<'a, PORT>(
-    _port: &'a PORT,
-    _pin_mask: u32,
-) -> Pin<'a, PORT, IsDisabled, Unknown, IsValid> {
+pub fn create<'a, PORT>(_port: &'a PORT, _pin_mask: u32) -> Pin<'a, PORT, IsDisabled, Unknown> {
     return Pin {
         port: _port,
         pin_mask: _pin_mask,
         direction: Unknown,
         enabled: IsDisabled,
-        valid: IsValid,
     };
 }
 
 // Macro for PIOA, PIOB, PIOC, PIOD generation
 macro_rules! add_control_pio {
     ($PIOX:ident) => {
-        impl<'a, ENABLED, DIRECTION, VALID> Configuration<target::$PIOX, ENABLED, DIRECTION, VALID>
-            for Pin<'a, target::$PIOX, ENABLED, DIRECTION, VALID>
+        impl<'a, ENABLED, DIRECTION> Configuration<target::$PIOX, ENABLED, DIRECTION>
+            for Pin<'a, target::$PIOX, ENABLED, DIRECTION>
         {
-            fn disable(&self) -> Pin<target::$PIOX, IsDisabled, Unknown, IsValid> {
+            fn disable(&self) -> Pin<target::$PIOX, IsDisabled, Unknown> {
                 self.port
                     .odr
                     .write_with_zero(|w| unsafe { w.bits(self.pin_mask) });
@@ -85,21 +78,19 @@ macro_rules! add_control_pio {
                     pin_mask: self.pin_mask,
                     direction: Unknown,
                     enabled: IsDisabled,
-                    valid: IsValid,
                 };
             }
 
-            fn handoff(&self) -> Pin<target::$PIOX, IsDisabled, Unknown, IsInvalid> {
+            fn handoff(&self) -> Pin<target::$PIOX, IsDisabled, Unknown> {
                 return Pin {
                     port: self.port,
                     pin_mask: self.pin_mask,
                     direction: Unknown,
                     enabled: IsDisabled,
-                    valid: IsInvalid,
                 };
             }
 
-            fn as_output(&self) -> Pin<target::$PIOX, IsEnabled, IsOutput, IsValid> {
+            fn as_output(&self) -> Pin<target::$PIOX, IsEnabled, IsOutput> {
                 self.port
                     .oer
                     .write_with_zero(|w| unsafe { w.bits(self.pin_mask) });
@@ -109,11 +100,10 @@ macro_rules! add_control_pio {
                     pin_mask: self.pin_mask,
                     direction: IsOutput,
                     enabled: IsEnabled,
-                    valid: IsValid,
                 };
             }
             // https://stackoverflow.com/questions/47759124/returning-a-generic-struct-from-new?rq=1
-            fn as_input(&self) -> Pin<target::$PIOX, IsEnabled, IsInput, IsValid> {
+            fn as_input(&self) -> Pin<target::$PIOX, IsEnabled, IsInput> {
                 self.port
                     .ier
                     .write_with_zero(|w| unsafe { w.bits(self.pin_mask) });
@@ -123,12 +113,11 @@ macro_rules! add_control_pio {
                     pin_mask: self.pin_mask,
                     direction: IsInput,
                     enabled: IsEnabled,
-                    valid: IsValid,
                 };
             }
         }
 
-        impl Output for Pin<'_, target::$PIOX, IsEnabled, IsOutput, IsValid> {
+        impl OutputPin for Pin<'_, target::$PIOX, IsEnabled, IsOutput> {
             fn set_state(&self, s: bool) {
                 if s {
                     self.port
@@ -166,9 +155,6 @@ macro_rules! add_control_pio {
             }
 
             fn switch_to_a(&self) {
-                // self.port
-                //     .pdr
-                //     .write_with_zero(|w| w.p9().set_bit().p8().set_bit()); // Change from p8 and p9 to mask.
                 self.port
                     .pdr
                     .write_with_zero(|w| unsafe { w.bits(self.pin_mask) });
@@ -180,11 +166,8 @@ macro_rules! add_control_pio {
             }
         }
 
-        impl Input for Pin<'_, target::$PIOX, IsEnabled, IsInput, IsValid> {
+        impl InputPin for Pin<'_, target::$PIOX, IsEnabled, IsInput> {
             fn switch_to_a(&self) {
-                // self.port
-                //     .pdr
-                //     .write_with_zero(|w| w.p9().set_bit().p8().set_bit()); // Change from p8 and p9 to mask.
                 self.port
                     .pdr
                     .write_with_zero(|w| unsafe { w.bits(self.pin_mask) });
@@ -218,6 +201,3 @@ add_control_pio!(PIOA);
 add_control_pio!(PIOB);
 add_control_pio!(PIOC);
 add_control_pio!(PIOD);
-
-//pub static pin13: Pin<IsDisabled, Unknown, IsValid, target::piob::RegisterBlock> =
-//    create(1 << 27, target::PIOB::ptr());

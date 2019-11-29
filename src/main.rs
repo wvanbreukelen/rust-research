@@ -28,18 +28,14 @@ extern crate panic_halt;
 pub use cortex_m::peripheral::syst;
 use cortex_m::peripheral::Peripherals as CorePeripherals;
 use cortex_m_rt::entry;
-//extern crate sam3x8e;
-
-//#[macro_use]
-//extern crate static_assertions;
 
 pub use sam3x8e as target;
 
 mod pin;
 mod serial;
 mod time;
-use crate::pin::{Configuration, Output};
-use crate::time::Delay;
+use crate::pin::{Configuration, OutputPin};
+use crate::time::BusyDelay;
 
 // Help: https://rust-embedded.github.io/book/start/registers.html
 #[entry]
@@ -51,7 +47,7 @@ fn main() -> ! {
         let watchdog = dp.WDT;
 
         // Do something.
-        let mut t = time::Time::syst(cp.SYST);
+        let mut t = time::Time::new(cp.SYST);
 
         // Disable the watchdog.
         watchdog.mr.write(|w| w.wddis().set_bit());
@@ -64,28 +60,24 @@ fn main() -> ! {
 
         let ser = serial::Serial::new(dp.UART, &pmc, 115200, p9.as_output(), p8.as_input());
         // Serial has now ownership over p8 and p9.
-
         ser.begin(&dp.PIOA, &pmc);
 
         let pin13 = pin::create(&dp.PIOB, 1 << 27);
         let pin13_output = pin13.as_output();
 
-        t.delay_ms(8_000_000);
-
         loop {
             //ser.write_blocking(ser.read_blocking());
-            if t.has_wrapped() {
-                // Turn on the LED!
-                if on {
-                    ser.write_str_blocking("Turning LED on...\r\n");
-                    pin13_output.set_high();
-                } else {
-                    ser.write_str_blocking("Turning LED off...\r\n");
-                    pin13_output.set_low();
-                }
-                on = !on;
-                t.delay_ms(2_000_000);
+            // Turn on the LED!
+            t.busy_delay_ms(1000);
+
+            if on {
+                ser.write_str_blocking("Turning LED on...\r\n");
+                pin13_output.set_high();
+            } else {
+                ser.write_str_blocking("Turning LED off...\r\n");
+                pin13_output.set_low();
             }
+            on = !on;
         }
 
         //let x = time::Time::now_ticks();

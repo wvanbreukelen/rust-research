@@ -1,7 +1,7 @@
 //#![deny(warnings)]
 
 use crate::pin::Configuration;
-use crate::pin::{Input, Output};
+use crate::pin::{InputPin, OutputPin};
 use core::convert::TryFrom;
 use core::u16;
 pub use cortex_m::peripheral::syst;
@@ -19,8 +19,8 @@ const SLOW_CLOCK_FREQUENCY_HZ: u32 = 32_768;
 pub struct Serial<'pins> {
     handle: target::UART,
     clock_div: u32,
-    pin_tx: pin::Pin<'pins, target::PIOA, pin::IsEnabled, pin::IsOutput, pin::IsValid>,
-    pin_rx: pin::Pin<'pins, target::PIOA, pin::IsEnabled, pin::IsInput, pin::IsValid>,
+    pin_tx: pin::Pin<'pins, target::PIOA, pin::IsEnabled, pin::IsOutput>,
+    pin_rx: pin::Pin<'pins, target::PIOA, pin::IsEnabled, pin::IsInput>,
 }
 
 pub enum SerialError {
@@ -40,8 +40,8 @@ impl<'pins> Serial<'pins> {
         _handle: target::UART,
         pmc: &target::PMC,
         baudrate: u32,
-        _pin_tx: pin::Pin<'pins, target::PIOA, pin::IsEnabled, pin::IsOutput, pin::IsValid>,
-        _pin_rx: pin::Pin<'pins, target::PIOA, pin::IsEnabled, pin::IsInput, pin::IsValid>,
+        _pin_tx: pin::Pin<'pins, target::PIOA, pin::IsEnabled, pin::IsOutput>,
+        _pin_rx: pin::Pin<'pins, target::PIOA, pin::IsEnabled, pin::IsInput>,
     ) -> Self {
         // Return a new instance
         return Self {
