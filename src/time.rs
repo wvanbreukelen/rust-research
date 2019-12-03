@@ -3,6 +3,8 @@ use cortex_m::peripheral::syst;
 use cortex_m_systick_countdown::*;
 use sam3x8e as target;
 
+use crate::pmc::PMC;
+
 //use cortex_m::peripheral::syst;
 //pub use sam3x8e as target;
 
@@ -31,6 +33,7 @@ impl Time {
     pub fn new(syst: cortex_m::peripheral::SYST) -> Self {
         Time {
             sys_countdown: PollingSysTick::new(syst, &SysTickCalibration::built_in().unwrap()),
+            //sys_countdown: PollingSysTick::new(syst, &SysTickCalibration::from_clock_hz(84_000_000))
         }
     }
 
@@ -46,6 +49,8 @@ impl BusyDelay for Time {
         counter.start_ms(delay);
 
         nb::block!(counter.wait_ms()).unwrap();
+        //self.sys_countdown.delay_ms(delay);
+        
     }
 
     fn busy_delay_us(&mut self, delay: u32) {

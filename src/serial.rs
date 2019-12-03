@@ -11,12 +11,7 @@ pub use sam3x8e as target;
 use crate::pin;
 use crate::pmc::PMC;
 use crate::peripherals;
-
 //mod pin;
-
-const MAINFRDY: u32 = 0x00010000;
-const MAINF_MASK: u32 = 0x0000ffff;
-const SLOW_CLOCK_FREQUENCY_HZ: u32 = 32_768;
 
 pub struct Serial<'pins> {
     handle: target::UART,
@@ -48,7 +43,7 @@ impl<'pins> Serial<'pins> {
         // Return a new instance
         return Self {
             handle: _handle,
-            clock_div: calc_uart_divider(main_clock_frequency_hz(), baudrate),
+            clock_div: calc_uart_divider(unsafe { PMC.get_main_clock_frequency_hz() }, baudrate),
             pin_tx: _pin_tx,
             pin_rx: _pin_rx,
         };
@@ -61,9 +56,9 @@ impl<'pins> Serial<'pins> {
         self.pin_rx.enable_pullup();
         self.pin_rx.switch_to_a();
 
-        PMC.enable_peripheral(peripherals::Peripheral::Uart); // Enable UART
-        PMC.enable_peripheral(peripherals::Peripheral::PioA); // Enable PIOA
-        PMC.enable_peripheral(peripherals::Peripheral::PioB); // Enable PIOA
+        unsafe { PMC.enable_peripheral(peripherals::Peripheral::Uart) }; // Enable UART
+        unsafe { PMC.enable_peripheral(peripherals::Peripheral::PioA) }; // Enable PIOA
+        unsafe { PMC.enable_peripheral(peripherals::Peripheral::PioB) }; // Enable PIOA
 
         // Disable UART
         self.disable();
@@ -101,6 +96,19 @@ impl<'pins> Serial<'pins> {
         for ch in s.chars() {
             self.write_byte_blocking(ch as u8);
         }
+    }
+
+    pub fn write_int<i32>(val: i32) {
+        let minus = false;
+
+        // if val < 0 {
+        //     minus = true;
+        //     val = -val;
+        // }
+
+        // while val > 0 {
+
+        // }
     }
 
     pub fn write_byte_blocking(&self, ch: u8) {
@@ -161,15 +169,6 @@ impl HWWriter for Serial<'_> {
 
         return Ok(self.handle.rhr.read().rxchr().bits());
     }
-}
-
-fn main_clock_frequency_hz<'b>() -> u32 {
-    let main_clock_frequency_within_16_slow_clock_cycles = unsafe {
-        while PMC.get_master_clk() & MAINFRDY == 0 {}
-        PMC.get_master_clk() & MAINF_MASK
-    };
-
-    main_clock_frequency_within_16_slow_clock_cycles * SLOW_CLOCK_FREQUENCY_HZ / 16
 }
 
 const fn calc_uart_divider(clock: u32, baudrate: u32) -> u32 {
