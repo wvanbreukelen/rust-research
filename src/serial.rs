@@ -3,14 +3,16 @@
 use crate::pin::Configuration;
 use crate::pin::{InputPin, OutputPin};
 use core::convert::TryFrom;
+use core::mem::transmute;
+use core::ops::*;
 use core::u16;
 pub use cortex_m::peripheral::syst;
 use nb;
 pub use sam3x8e as target;
 
+use crate::peripherals;
 use crate::pin;
 use crate::pmc::PMC;
-use crate::peripherals;
 //mod pin;
 
 pub struct Serial<'pins> {
@@ -43,7 +45,8 @@ impl<'pins> Serial<'pins> {
         // Return a new instance
         return Self {
             handle: _handle,
-            clock_div: calc_uart_divider(unsafe { PMC.get_main_clock_frequency_hz() }, baudrate),
+            //clock_div: calc_uart_divider(unsafe { PMC.get_main_clock_frequency_hz() }, baudrate),
+            clock_div: calc_uart_divider(84_000_000, baudrate),
             pin_tx: _pin_tx,
             pin_rx: _pin_rx,
         };
@@ -75,9 +78,9 @@ impl<'pins> Serial<'pins> {
         self.enable();
     }
 
-    pub fn write_array_blocking(&self, arr: &[u8]) {
-        for &ch in arr.iter() {
-            self.write_byte_blocking(ch);
+    pub fn write_array_blocking(&self, arr: &[u8; 4]) {
+        for x in 0..4 {
+            self.write_byte_blocking(arr[x]);
         }
     }
 
@@ -98,7 +101,8 @@ impl<'pins> Serial<'pins> {
         }
     }
 
-    pub fn write_int<i32>(val: i32) {
+    pub fn write_int(&self, mut val: u32) {
+        let mut bytes: [u8; 4];
         let minus = false;
 
         // if val < 0 {
@@ -106,9 +110,13 @@ impl<'pins> Serial<'pins> {
         //     val = -val;
         // }
 
-        // while val > 0 {
+        bytes = unsafe { transmute(val) };
 
-        // }
+        for byte in bytes.iter() {
+            //if *byte != 0 {
+            self.write_byte_blocking(*byte + '0' as u8);
+            //}
+        }
     }
 
     pub fn write_byte_blocking(&self, ch: u8) {
@@ -121,7 +129,6 @@ impl<'pins> Serial<'pins> {
             _ => None,
         }
     }
-
 }
 
 impl HWWriter for Serial<'_> {

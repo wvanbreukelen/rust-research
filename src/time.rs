@@ -26,7 +26,8 @@ pub trait Delay {
 }
 
 pub struct Time {
-    sys_countdown: cortex_m_systick_countdown::PollingSysTick,
+    pub sys_countdown: cortex_m_systick_countdown::PollingSysTick,
+    //counter: cortex_m_systick_countdown::MillisCountDown,
 }
 
 impl Time {
@@ -34,6 +35,7 @@ impl Time {
         Time {
             sys_countdown: PollingSysTick::new(syst, &SysTickCalibration::built_in().unwrap()),
             //sys_countdown: PollingSysTick::new(syst, &SysTickCalibration::from_clock_hz(84_000_000))
+            //counter: cortex_m_systick_countdown::MillisCountDown::new(&self.sys_countdown)
         }
     }
 
@@ -50,7 +52,6 @@ impl BusyDelay for Time {
 
         nb::block!(counter.wait_ms()).unwrap();
         //self.sys_countdown.delay_ms(delay);
-        
     }
 
     fn busy_delay_us(&mut self, delay: u32) {
