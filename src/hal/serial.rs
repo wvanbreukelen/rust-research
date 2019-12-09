@@ -52,7 +52,7 @@ impl<'pins> Serial<'pins> {
         };
     }
 
-    pub fn begin<'b>(&self) {
+    pub fn begin<'b>(&self){
         // Set pins into right mode
         self.pin_tx.enable_pullup();
         self.pin_tx.switch_to_a();
@@ -101,7 +101,7 @@ impl<'pins> Serial<'pins> {
         }
     }
 
-    pub fn write_int(&self, mut val: u32) {
+    pub fn write_int(&self, val: u32) {
         let mut bytes: [u8; 4];
         let minus = false;
 
