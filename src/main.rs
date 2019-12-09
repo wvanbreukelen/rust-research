@@ -11,6 +11,7 @@ pub use cortex_m::peripheral::syst;
 use cortex_m::peripheral::Peripherals as CorePeripherals;
 use cortex_m_rt::entry;
 use cortex_m_systick_countdown::*;
+ use crate::time::Delay;
 
 pub use sam3x8e as target;
 
@@ -28,6 +29,9 @@ use crate::time::BusyDelay;
 #[entry]
 fn main() -> ! {
     if let (Some(cp), Some(dp)) = (CorePeripherals::take(), target::Peripherals::take()) {
+        // Disable the watchdog.
+        dp.WDT.mr.write(|w| w.wddis().set_bit());
+
         // Init the clocks.
         unsafe {
             PMC.setup_pmc(dp.PMC, &dp.EFC0, &dp.EFC1);
@@ -35,21 +39,9 @@ fn main() -> ! {
         }
 
         let mut on = false;
-        let watchdog = dp.WDT;
-
-        //let mut has_ref = cp.SYST.has_reference_clock();
 
         // Do something.
-        //let mut t = time::Time::new(cp.SYST);
-
-        let mut syst = cp.SYST;
-
-        syst.set_clock_source(syst::SystClkSource::External);
-        syst.set_reload(10500); // 10_500 ticks is 1 ms in real life, so 1 us is 1050 ticks in real life.
-        syst.enable_counter();
-
-        // Disable the watchdog.
-        watchdog.mr.write(|w| w.wddis().set_bit());
+        let mut t = time::Time::new(cp.SYST);
 
         // Initialize the pins.
         let p9 = pin::create(&dp.PIOA, 1 << 9);
@@ -65,20 +57,7 @@ fn main() -> ! {
         pin13_output.set_high();
 
         loop {
-            let mut counter: u32 = 0;
-            while counter < 500 {
-                // 500 ms wait
-                while !syst.has_wrapped() {}
-
-                counter += 1;
-            }
-
-            //t.busy_delay_ms(1000);
-            //t.sys_countdown.delay_ms(1000);
-
-            // let mut count_down = MillisCountDown::new(&t.sys_countdown);
-            // count_down.start_ms(2000);
-            // nb::block!(count_down.wait_ms()).unwrap();
+            t.busy_delay_ms(250);
 
             if on {
                 ser.write_str_blocking("Turning LED on...\r\n");
