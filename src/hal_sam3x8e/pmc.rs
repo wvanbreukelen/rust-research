@@ -3,7 +3,11 @@ use sam3x8e;
 use crate::hal::pmc::*;
 use crate::hal_sam3x8e::core::*;
 
-
+impl PMCConfigure<sam3x8e::PMC> for PMCControl<sam3x8e::PMC> {
+    fn set_hw_pmc(&mut self, pmc: sam3x8e::PMC) {
+        self.rf = Some(pmc);
+    }
+}
 
 impl PMCRead for PMCControl<sam3x8e::PMC> {
     fn get_master_clk(&self) -> u32 {

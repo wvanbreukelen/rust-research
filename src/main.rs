@@ -26,8 +26,8 @@ fn main() -> ! {
 
         // Init the clocks.
         unsafe {
-            setup_clocks(&dp.PMC, &dp.EFC0, &dp.EFC1);
-            PMC.rf = Some(dp.PMC);
+            setup_core_clock(&dp.PMC, &dp.EFC0, &dp.EFC1);
+            PMC.set_hw_pmc(dp.PMC);
             PMC.enable_peripheral(Peripheral::PioA);
         }
 

@@ -45,7 +45,7 @@ pub trait SerialWrite {
     fn write_byte<'b>(&self, ch: u8) -> nb::Result<(), ()>;
 
     fn write_int(&self, val: u32) {
-        let mut bytes: [u8; 4];
+        let bytes: [u8; 4];
         let minus = false;
 
         // if val < 0 {

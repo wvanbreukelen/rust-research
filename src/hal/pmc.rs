@@ -6,6 +6,10 @@ pub struct PMCControl<PMC> {
     pub rf: Option<PMC>,
 }
 
+pub trait PMCConfigure<PMC> {
+    fn set_hw_pmc(&mut self, pmc: PMC);
+}
+
 pub trait PMCRead {
     fn get_master_clk(&self) -> u32;
     fn get_main_clock_frequency_hz(&self) -> u32;

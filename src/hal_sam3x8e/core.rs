@@ -138,7 +138,7 @@ const fn EEFC_FMR_FWS(value: u32) -> u32 {
     (EEFC_FMR_FWS_MSK & ((value) << EEFC_FMR_FWS_POS))
 }
 
-pub fn setup_clocks(pmc: &sam3x8e::PMC, efc0: &sam3x8e::EFC0, efc1: &sam3x8e::EFC1) {
+pub fn setup_core_clock(pmc: &sam3x8e::PMC, efc0: &sam3x8e::EFC0, efc1: &sam3x8e::EFC1) {
     efc0.fmr.write(|w| unsafe { w.bits(EEFC_FMR_FWS(4)) });
     efc1.fmr.write(|w| unsafe { w.bits(EEFC_FMR_FWS(4)) });
 
