@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Config
-targetpath="../rust-platforms"
+targetpath="rust-platforms"
 
 echo "Generating architecture for $1"
 

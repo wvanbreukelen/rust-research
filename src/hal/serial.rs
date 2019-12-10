@@ -1,10 +1,5 @@
-//#![deny(warnings)]
-
 use crate::hal::pin;
-
 use core::mem::transmute;
-
-//mod pin;
 
 pub struct Serial<'pins, UART, PIN_PORT_TX, PIN_PORT_RX> {
     pub handle: UART,

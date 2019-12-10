@@ -21,7 +21,7 @@ pub struct Unknown;
 // https://stackoverflow.com/questions/51932944/how-to-match-rusts-if-expressions-in-a-macro
 pub struct Pin<'a, PORT, STATE, DIRECTION> {
     pub port: &'a PORT,
-    pub pin_mask: u32,
+    pub port_offset: u32,
     pub state: STATE,
     pub direction: DIRECTION, // is output
 }
@@ -34,7 +34,6 @@ pub trait PinConfigure<PORT, STATE, DIRECTION> {
 
     fn enable_pullup(&self);
     fn disable_pullup(&self);
-    fn switch_to_a(&self);
 }
 
 pub trait PinWrite {
@@ -54,10 +53,10 @@ pub trait PinRead {
     fn get_state(&self) -> bool;
 }
 
-pub fn create_pin<'a, PORT>(_port: &'a PORT, _pin_mask: u32) -> Pin<'a, PORT, IsDisabled, Unknown> {
+pub fn create_pin<'a, PORT>(_port: &'a PORT, _port_offset: u32) -> Pin<'a, PORT, IsDisabled, Unknown> {
     return Pin {
         port: _port,
-        pin_mask: _pin_mask,
+        port_offset: _port_offset,
         direction: Unknown,
         state: IsDisabled,
     };

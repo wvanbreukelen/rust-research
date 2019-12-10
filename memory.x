@@ -19,8 +19,20 @@ SAM3X layout
 0x2010 0000 - 0x2010 107F   4224 bytes of NAND flash controller buffer
 */
 
+  /*
+
+  DUE LAYOUT
+
   FLASH : ORIGIN = 0x00080000, LENGTH = 512K
   RAM : ORIGIN = 0x20000000, LENGTH = 64K
+  */
+
+  /*
+  STM32F407 LAYOUT
+  https://github.com/timbod7/rust-stm32f4-examples/blob/master/blinky/memory.x
+  */
+  FLASH : ORIGIN = 0x08000000, LENGTH = 256K
+  RAM : ORIGIN = 0x20000000, LENGTH = 40K
 }
 
 /* This is where the call stack will be allocated. */

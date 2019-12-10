@@ -1,16 +1,16 @@
 ELF=my_due_project
 TARGET=thumbv7m-none-eabi
-SERIAL_PORT=cu.usbmodem14D01 #COM10
-EXTRA_COMPILE_ARGS=""#--release
+SERIAL_PORT=cu.usbmodem14E01 #COM10
+EXTRA_COMPILE_ARGS="--release" # Might be using --release flag.
 #cargo size --bin $ELF -- -A
 #cargo objcopy --bin $ELF -- -Obinary /tmp/$ELF.bin
 
 #bash -c "./compile.sh"
 
-#cargo size --target $TARGET --bin  $ELF -- -A
-#cargo objcopy --target $TARGET --bin $ELF -- -Obinary build/$ELF.bin
+cargo size $EXTRA_COMPILE_ARGS --target $TARGET --bin  $ELF -- -A
+cargo objcopy $EXTRA_COMPILE_ARGS --target $TARGET --bin $ELF -- -Obinary build/$ELF.bin
 
-cargo build --target $TARGET
+#cargo build --target $TARGET --release
 
 ls /dev/ | grep cu
 #stty -f /dev/cu.usbmodem14801 speed 1200 cs8 -cstopb -parenb; sleep 1.0

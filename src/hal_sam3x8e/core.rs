@@ -1,6 +1,6 @@
 #![no_std]
 
-use crate::hal::pmc::*;
+use crate::hal::clock::*;
 
 pub static mut PMC: PMCControl<sam3x8e::PMC> = PMCControl { rf: None };
 
