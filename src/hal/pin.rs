@@ -51,6 +51,14 @@ pub trait PinWrite {
 
 pub trait PinRead {
     fn get_state(&self) -> bool;
+
+    fn is_low(&self) -> bool {
+        !self.get_state()
+    }
+
+    fn is_high(&self) -> bool {
+        self.get_state()
+    }
 }
 
 pub fn create_pin<'a, PORT>(_port: &'a PORT, _port_offset: u32) -> Pin<'a, PORT, IsDisabled, Unknown> {

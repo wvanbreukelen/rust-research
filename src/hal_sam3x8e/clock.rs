@@ -1,6 +1,6 @@
 use sam3x8e;
 
-use crate::hal::pmc::*;
+use crate::hal::clock::*;
 use crate::hal_sam3x8e::core::*;
 
 impl PMCConfigure<sam3x8e::PMC> for PMCControl<sam3x8e::PMC> {
@@ -27,18 +27,18 @@ impl PMCRead for PMCControl<sam3x8e::PMC> {
     }
 }
 
-impl PMCWrite<Peripheral> for PMCControl<sam3x8e::PMC> {
-    fn enable_peripheral(&self, p: Peripheral) {
+impl PMCWrite<PeripheralListing> for PMCControl<sam3x8e::PMC> {
+    fn enable_peripheral(&self, p: PeripheralListing) {
         match &self.rf {
             None => {}
-            Some(x) => x.pmc_pcer0.write_with_zero(|w| unsafe { w.bits(p.mask()) }),
+            Some(x) => x.pmc_pcer0.write_with_zero(|w| unsafe { w.bits(p.offset) }),
         }
     }
 
-    fn disable_peripheral(&self, p: Peripheral) {
+    fn disable_peripheral(&self, p: PeripheralListing) {
         match &self.rf {
             None => {}
-            Some(x) => x.pmc_pcdr0.write_with_zero(|w| unsafe { w.bits(p.mask()) }),
+            Some(x) => x.pmc_pcdr0.write_with_zero(|w| unsafe { w.bits(p.offset) }),
         }
     }
 }

@@ -46,7 +46,7 @@ macro_rules! add_control_pio {
             fn as_input(&self) -> Pin<$TARGET::$PIOX, IsEnabled, IsInput> {
                 let offset = 2 * self.port_offset;
 
-                self.disable_pullup();
+                //self.disable_pullup();
 
                 self.port.moder.modify(|r, w| unsafe {
                     w.bits((r.bits() & !(0b11 << offset)) | (0b00 << offset))
@@ -105,5 +105,10 @@ macro_rules! add_control_pio {
 
 add_control_pio!(stm32f407, GPIOA);
 add_control_pio!(stm32f407, GPIOB);
-//add_control_pio!(stm32f407, GPIOC);
-//add_control_pio!(stm32f407, GPIOD);
+add_control_pio!(stm32f407, GPIOC);
+add_control_pio!(stm32f407, GPIOD);
+add_control_pio!(stm32f407, GPIOE);
+add_control_pio!(stm32f407, GPIOF);
+add_control_pio!(stm32f407, GPIOG);
+add_control_pio!(stm32f407, GPIOH);
+add_control_pio!(stm32f407, GPIOI);

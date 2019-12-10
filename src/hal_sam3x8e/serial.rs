@@ -2,7 +2,7 @@ use sam3x8e;
 
 use crate::hal::serial::*;
 use crate::hal::pin::*;
-use crate::hal::pmc::*;
+use crate::hal::clock::*;
 use crate::hal_sam3x8e::core::*;
 
 impl<'pins> Serial<'pins, sam3x8e::UART, sam3x8e::PIOA, sam3x8e::PIOA> {
@@ -30,13 +30,13 @@ impl<'pins> Serial<'pins, sam3x8e::UART, sam3x8e::PIOA, sam3x8e::PIOA> {
     pub fn begin<'b>(&self){
         // Set pins into right mode
         self.pin_tx.enable_pullup();
-        self.pin_tx.switch_to_a();
+        switch_to_a(&self.pin_tx);
         self.pin_rx.enable_pullup();
-        self.pin_rx.switch_to_a();
+        switch_to_a(&self.pin_rx);
 
-        unsafe { PMC.enable_peripheral(Peripheral::Uart) }; // Enable UART
-        unsafe { PMC.enable_peripheral(Peripheral::PioA) }; // Enable PIOA
-        unsafe { PMC.enable_peripheral(Peripheral::PioB) }; // Enable PIOA
+        unsafe { CLOCK.enable_peripheral(UART) }; // Enable UART
+        unsafe { CLOCK.enable_peripheral(GPIOA) }; // Enable PIOA
+        unsafe { CLOCK.enable_peripheral(GPIOB) }; // Enable PIOA
 
         // Disable UART
         self.disable();
@@ -108,4 +108,15 @@ impl SerialRead for Serial<'_, sam3x8e::UART, sam3x8e::PIOA, sam3x8e::PIOA> {
 
 const fn calc_uart_divider(clock: u32, baudrate: u32) -> u32 {
     clock / (baudrate * 16)
+}
+
+fn switch_to_a<'a, MODE>(pin: &Pin<'a, sam3x8e::PIOA, IsEnabled, MODE>) {
+    pin.port
+    .pdr
+    .write_with_zero(|w| unsafe { w.bits(pin.port_offset) });
+    let cur_absr = pin.port.absr.read().bits();
+    pin.port
+        .absr
+        .write_with_zero(|w| unsafe { w.bits(cur_absr & (!pin.port_offset)) });
+    // Not working...
 }

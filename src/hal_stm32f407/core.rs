@@ -30,13 +30,6 @@ pub const USART1     : PeripheralListing = PeripheralListing { offset: 4, rcc_po
 
 // Source: https://github.com/stm32-rs/stm32f4xx-hal/blob/e94c88ec85488445bbef10542e21173a99781364/src/rcc.rs
 pub fn setup_core_clock(rcc: &stm32f407::RCC, desired_core_clk: Option<u32>, use_hse: bool) -> (bool, u32) {
-    // /let mut hse: u32;
-    //let mut hclk: Option<u32>;
-    //let mut pclk1: Option<u32>;
-    //let mut pclk2: Option<u32>;
-    //let mut sysclk: u32;
-
-
     let pllsrcclk = HSI;
     let sysclk = desired_core_clk.unwrap_or(pllsrcclk);
 
@@ -70,19 +63,6 @@ pub fn setup_core_clock(rcc: &stm32f407::RCC, desired_core_clk: Option<u32>, use
 
     if sysclk != pllsrcclk {
         // use PLL as source
-        // rcc.pllcfgr.write(|w| unsafe {
-        //     w
-        //         .bits(pllm as u8)
-        //         .plln()
-        //         .bits(plln as u16)
-        //         .pllp()
-        //         .bits(pllp as u8)
-        //         .pllsrc()
-        //         .bit(self.hse.is_some())
-        // });
-        // ((pllm as u8)) | 
-        // ((plln as u32) << 7) | 
-
         rcc.pllcfgr.write(|w| unsafe {
             w.bits((pllm as u32) | ((plln as u32) << 7) | ((pllp as u32) << 15)). // Set pllm & plln & pllp
             pllsrc().bit(use_hse)
@@ -93,75 +73,3 @@ pub fn setup_core_clock(rcc: &stm32f407::RCC, desired_core_clk: Option<u32>, use
         (false, pllsrcclk)
     }
 }
-
-// impl Peripheral {
-//     pub fn id(&self) -> u32 {
-//         *self as u32
-//     }
-
-//     pub fn index(&self) -> usize {
-//         self.id() as usize / 32
-//     }
-
-//     pub fn mask(&self) -> u32 {
-//         0x1 << (self.id() % 32)
-//     }
-// }
-
-
-// #[derive(Clone, Copy)]
-// //#[repr(u32)]
-// pub enum Peripheral {
-//     GpioA        = GPIOA,
-//     GpioB        = GPIOB,
-//     GpioC        = GPIOC,
-//     GpioD        = GPIOD,
-//     GpioE        = GPIOE,
-//     GpioF        = GPIOF,
-//     Usart1       = USART1
-//     // Supc      = SUPC,
-//     // Rstc      = RSTC,
-//     // Rtc       = RTC,
-//     // Rtt       = RTT,
-//     // Wdt       = WDT,
-//     // Pmc       = P_PMC,
-//     // Eefc0     = EEFC0,
-//     // Eefc1     = EEFC1,
-//     // Uart      = UART,
-//     // SmcSdramc = SMC_SDRAMC,
-//     // Sdramc    = SDRAMC,
-//     // PioA      = PIOA,
-//     // PioB      = PIOB,
-//     // PioC      = PIOC,
-//     // PioD      = PIOD,
-//     // PioE      = PIOE,
-//     // PioF      = PIOF,
-//     // Usart0    = USART0,
-//     // Usart1    = USART1,
-//     // Usart2    = USART2,
-//     // Usart3    = USART3,
-//     // Hsmci     = HSMCI,
-//     // Twi0      = TWI0,
-//     // Twi1      = TWI1,
-//     // Spi0      = SPI0,
-//     // Spi1      = SPI1,
-//     // Ssc       = SSC,
-//     // Tc0       = TC0,
-//     // Tc1       = TC1,
-//     // Tc2       = TC2,
-//     // Tc3       = TC3,
-//     // Tc4       = TC4,
-//     // Tc5       = TC5,
-//     // Tc6       = TC6,
-//     // Tc7       = TC7,
-//     // Tc8       = TC8,
-//     // Pwm       = PWM,
-//     // Adc       = ADC,
-//     // Dacc      = DACC,
-//     // Dmac      = DMAC,
-//     // UtogHs    = UOTGHS,
-//     // Trng      = TRNG,
-//     // Emac      = EMAC,
-//     // Can0      = CAN0,
-//     // Can1      = CAN1,
-// }

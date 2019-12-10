@@ -11,11 +11,11 @@ macro_rules! add_control_pio {
             fn disable(&self) -> Pin<$TARGET::$PIOX, IsDisabled, Unknown> {
                 self.port
                     .odr
-                    .write_with_zero(|w| unsafe { w.bits(self.pin_mask) });
+                    .write_with_zero(|w| unsafe { w.bits(self.port_offset) });
 
                 Pin {
                     port: self.port,
-                    pin_mask: self.pin_mask,
+                    port_offset: self.port_offset,
                     direction: Unknown,
                     state: IsDisabled,
                 }
@@ -24,11 +24,11 @@ macro_rules! add_control_pio {
             fn as_output(&self) -> Pin<$TARGET::$PIOX, IsEnabled, IsOutput> {
                 self.port
                     .oer
-                    .write_with_zero(|w| unsafe { w.bits(self.pin_mask) });
+                    .write_with_zero(|w| unsafe { w.bits(self.port_offset) });
 
                 Pin {
                     port: self.port,
-                    pin_mask: self.pin_mask,
+                    port_offset: self.port_offset,
                     direction: IsOutput,
                     state: IsEnabled,
                 }
@@ -37,11 +37,11 @@ macro_rules! add_control_pio {
             fn as_input(&self) -> Pin<$TARGET::$PIOX, IsEnabled, IsInput> {
                 self.port
                     .ier
-                    .write_with_zero(|w| unsafe { w.bits(self.pin_mask) });
+                    .write_with_zero(|w| unsafe { w.bits(self.port_offset) });
 
                 Pin {
                     port: self.port,
-                    pin_mask: self.pin_mask,
+                    port_offset: self.port_offset,
                     direction: IsInput,
                     state: IsEnabled,
                 }
@@ -50,24 +50,13 @@ macro_rules! add_control_pio {
             fn enable_pullup(&self) {
                 self.port
                     .puer
-                    .write_with_zero(|w| unsafe { w.bits(self.pin_mask) });
+                    .write_with_zero(|w| unsafe { w.bits(self.port_offset) });
             }
 
             fn disable_pullup(&self) {
                 self.port
                     .pudr
-                    .write_with_zero(|w| unsafe { w.bits(self.pin_mask) });
-            }
-
-            fn switch_to_a(&self) {
-                self.port
-                    .pdr
-                    .write_with_zero(|w| unsafe { w.bits(self.pin_mask) });
-                let cur_absr = self.port.absr.read().bits();
-                self.port
-                    .absr
-                    .write_with_zero(|w| unsafe { w.bits(cur_absr & (!self.pin_mask)) });
-                // Not working...
+                    .write_with_zero(|w| unsafe { w.bits(self.port_offset) });
             }
         }
 
@@ -75,19 +64,19 @@ macro_rules! add_control_pio {
             fn set_high(&self) {
                 self.port
                     .sodr
-                    .write_with_zero(|w| unsafe { w.bits(self.pin_mask) });
+                    .write_with_zero(|w| unsafe { w.bits(self.port_offset) });
             }
 
             fn set_low(&self) {
                 self.port
                     .codr
-                    .write_with_zero(|w| unsafe { w.bits(self.pin_mask) });
+                    .write_with_zero(|w| unsafe { w.bits(self.port_offset) });
             }
         }
 
         impl PinRead for Pin<'_, $TARGET::$PIOX, IsEnabled, IsInput> {
             fn get_state(&self) -> bool {
-                (self.port.pdsr.read().bits() & self.pin_mask) != 0
+                (self.port.pdsr.read().bits() & self.port_offset) != 0
             }
         }
     };

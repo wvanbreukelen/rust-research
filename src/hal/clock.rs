@@ -6,8 +6,8 @@ pub struct PMCControl<PMC> {
     pub rf: Option<PMC>,
 }
 
-pub trait PMCConfigure<PMC> {
-    fn set_hw_device(&mut self, dev: PMC);
+pub trait PMCConfigure<DEVICES> {
+    fn set_hw_device(&mut self, devs: DEVICES);
 }
 
 pub trait PMCRead {
