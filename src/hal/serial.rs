@@ -1,5 +1,6 @@
 use crate::hal::pin;
 use core::mem::transmute;
+use core::num::Wrapping;
 
 pub struct Serial<'pins, UART, PIN_PORT_TX, PIN_PORT_RX> {
     pub handle: UART,
@@ -8,7 +9,14 @@ pub struct Serial<'pins, UART, PIN_PORT_TX, PIN_PORT_RX> {
     pub pin_rx: pin::Pin<'pins, PIN_PORT_RX, pin::IsEnabled, pin::IsInput>,
 }
 
-pub trait SerialConfigure {
+pub trait SerialConfigure<'pins, UART, PIN_PORT_TX, PIN_PORT_RX> {
+    fn new(
+        _handle: UART,
+        baudrate: u32,
+        _pin_tx: pin::Pin<'pins, PIN_PORT_TX, pin::IsEnabled, pin::IsOutput>,
+        _pin_rx: pin::Pin<'pins, PIN_PORT_RX, pin::IsEnabled, pin::IsInput>,
+    ) -> Self;
+    fn begin(&self);
     fn disable(&self);
     fn enable(&self);
 }
@@ -33,28 +41,48 @@ pub trait SerialRead {
             _ => None,
         }
     }
-
 }
 
 pub trait SerialWrite {
     fn write_byte<'b>(&self, ch: u8) -> nb::Result<(), ()>;
 
-    fn write_int(&self, val: u32) {
-        let bytes: [u8; 4];
-        let minus = false;
-
-        // if val < 0 {
-        //     minus = true;
-        //     val = -val;
-        // }
-
-        bytes = unsafe { transmute(val) };
-
-        for byte in bytes.iter() {
-            //if *byte != 0 {
-            self.write_byte_blocking(*byte + '0' as u8);
-            //}
+    fn add_digit(&self, c: Wrapping<u8>, hex_base: Wrapping<u8>) -> Wrapping<u8> {
+        if c > Wrapping(9) {
+            c += hex_base - Wrapping(10);
+        } else {
+            c += Wrapping('0' as u8);
         }
+
+        c
+    }
+
+    fn write_int(&self, mut val: Wrapping<i32>) {
+        let bytes: [u8; 4];
+        let mut minus = false;
+
+        if val < Wrapping(0) {
+            minus = true;
+            val *= Wrapping(-1);
+        }
+
+        let mut index = 0;
+
+        if val == Wrapping(0) {
+            self.write_byte_blocking(self.add_digit(Wrapping(x % ), 16).0 as u8);
+        }
+
+        while val > Wrapping(0) {
+
+            //bytes[index] = (val % 9)
+        }
+
+        // bytes = unsafe { transmute(val) };
+
+        // for byte in bytes.iter() {
+        //     //if *byte != 0 {
+        //     self.write_byte_blocking(*byte + '0' as u8);
+        //     //}
+        // }
     }
 
     fn write_array_blocking(&self, arr: &[u8; 4]) {
@@ -73,4 +101,3 @@ pub trait SerialWrite {
         nb::block!(self.write_byte(ch)).unwrap();
     }
 }
-// Macro for setting up a serial device other then UART.

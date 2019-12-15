@@ -1,8 +1,8 @@
 use sam3x8e;
 
-use crate::hal::serial::*;
-use crate::hal::pin::*;
 use crate::hal::clock::*;
+use crate::hal::pin::*;
+use crate::hal::serial::*;
 use crate::hal_sam3x8e::core::*;
 
 impl<'pins> Serial<'pins, sam3x8e::UART, sam3x8e::PIOA, sam3x8e::PIOA> {
@@ -11,8 +11,12 @@ impl<'pins> Serial<'pins, sam3x8e::UART, sam3x8e::PIOA, sam3x8e::PIOA> {
     // Pin: IsDisabled, Unknown, IsValid
 
     // Disadvantage of Rust. We need to be explicit about all generic parameters. We cannot perform function overloading.
+}
 
-    pub fn new(
+impl<'pins> SerialConfigure<'pins, sam3x8e::UART, sam3x8e::PIOA, sam3x8e::PIOA>
+    for Serial<'pins, sam3x8e::UART, sam3x8e::PIOA, sam3x8e::PIOA>
+{
+    fn new(
         _handle: sam3x8e::UART,
         baudrate: u32,
         _pin_tx: Pin<'pins, sam3x8e::PIOA, IsEnabled, IsOutput>,
@@ -27,7 +31,7 @@ impl<'pins> Serial<'pins, sam3x8e::UART, sam3x8e::PIOA, sam3x8e::PIOA> {
         };
     }
 
-    pub fn begin<'b>(&self){
+    fn begin<'b>(&self) {
         // Set pins into right mode
         self.pin_tx.enable_pullup();
         switch_to_a(&self.pin_tx);
@@ -52,9 +56,7 @@ impl<'pins> Serial<'pins, sam3x8e::UART, sam3x8e::PIOA, sam3x8e::PIOA> {
         // Enable UART
         self.enable();
     }
-}
 
-impl SerialConfigure for Serial<'_, sam3x8e::UART, sam3x8e::PIOA, sam3x8e::PIOA> {
     fn enable(&self) {
         // Set the baudrate
         self.handle
@@ -91,7 +93,6 @@ impl SerialWrite for Serial<'_, sam3x8e::UART, sam3x8e::PIOA, sam3x8e::PIOA> {
         self.handle
             .thr
             .write_with_zero(|w| unsafe { w.txchr().bits(ch) });
-        
         return Ok(());
     }
 }
@@ -112,11 +113,11 @@ const fn calc_uart_divider(clock: u32, baudrate: u32) -> u32 {
 
 fn switch_to_a<'a, MODE>(pin: &Pin<'a, sam3x8e::PIOA, IsEnabled, MODE>) {
     pin.port
-    .pdr
-    .write_with_zero(|w| unsafe { w.bits(pin.port_offset) });
+        .pdr
+        .write_with_zero(|w| unsafe { w.bits(1 << pin.port_offset) });
     let cur_absr = pin.port.absr.read().bits();
     pin.port
         .absr
-        .write_with_zero(|w| unsafe { w.bits(cur_absr & (!pin.port_offset)) });
+        .write_with_zero(|w| unsafe { w.bits(cur_absr & (!(1 << pin.port_offset))) });
     // Not working...
 }

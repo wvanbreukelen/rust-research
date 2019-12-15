@@ -1,4 +1,4 @@
-use core::{num::Wrapping};
+use core::num::Wrapping;
 use cortex_m::peripheral::{syst::SystClkSource, SYST};
 
 use crate::hal::time::*;
@@ -15,7 +15,7 @@ impl Time {
         Time {
             syst: _syst,
             ticks_per_ms: _ticks_per_ms,
-            counter: Wrapping(0)
+            counter: Wrapping(0),
         }
     }
 

@@ -61,11 +61,27 @@ pub trait PinRead {
     }
 }
 
-pub fn create_pin<'a, PORT>(_port: &'a PORT, _port_offset: u32) -> Pin<'a, PORT, IsDisabled, Unknown> {
-    return Pin {
+pub fn create_pin<'a, PORT>(
+    _port: &'a PORT,
+    _port_offset: u32,
+) -> Pin<'a, PORT, IsDisabled, Unknown> {
+    Pin {
         port: _port,
         port_offset: _port_offset,
         direction: Unknown,
         state: IsDisabled,
+    }
+}
+
+#[macro_export]
+macro_rules! create_pin {
+    ($PIOX:expr, $PIOX_OFFSET:expr) => {
+        create_pin($PIOX, $PIOX_OFFSET as u32);
     };
+}
+
+// Peripherals
+#[derive(Clone, Copy)]
+pub struct PeripheralListing {
+    pub offset: u32,
 }

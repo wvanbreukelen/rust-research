@@ -1,9 +1,11 @@
 #![no_std]
 
 use crate::hal::clock::*;
+use crate::hal::pin::*;
 
 pub static mut CLOCK: PMCControl<sam3x8e::PMC> = PMCControl { rf: None };
 
+// Frequency settings
 pub const MAINFRDY: u32 = 0x00010000;
 pub const MAINF_MASK: u32 = 0x0000ffff;
 pub const SLOW_CLOCK_FREQUENCY_HZ: u32 = 32_768;
@@ -16,20 +18,20 @@ pub const PMC_MCKR_CSS_MSK: u32 = (0x3u32 << 0);
 pub const EEFC_FMR_FWS_POS: u32 = 8;
 pub const EEFC_FMR_FWS_MSK: u32 = (0xFu32 << EEFC_FMR_FWS_POS);
 
+pub const UART: PeripheralListing = PeripheralListing { offset: 8 };
+pub const GPIOA: PeripheralListing = PeripheralListing { offset: 11 };
+pub const GPIOB: PeripheralListing = PeripheralListing { offset: 12 };
+pub const GPIOC: PeripheralListing = PeripheralListing { offset: 13 };
+pub const GPIOD: PeripheralListing = PeripheralListing { offset: 14 };
+pub const GPIOE: PeripheralListing = PeripheralListing { offset: 15 };
+pub const GPIOF: PeripheralListing = PeripheralListing { offset: 16 };
 
-#[derive(Clone, Copy)]
-pub struct PeripheralListing {
-    pub offset: u32
+#[repr(u32)]
+pub enum GPIOPins {
+    OnboardLed = 27,
 }
 
-pub const UART : PeripheralListing = PeripheralListing { offset: 8 };
-pub const GPIOA : PeripheralListing = PeripheralListing { offset: 11 };
-pub const GPIOB : PeripheralListing = PeripheralListing { offset: 12 };
-pub const GPIOC : PeripheralListing = PeripheralListing { offset: 13 };
-pub const GPIOD : PeripheralListing = PeripheralListing { offset: 14 };
-pub const GPIOE : PeripheralListing = PeripheralListing { offset: 15 };
-pub const GPIOF : PeripheralListing = PeripheralListing { offset: 16 };
-
+//pub const PIN_ONBOARD_LED: GPIOPin = GPIOPin { offset: 27 };
 
 // // Taken from: https://github.com/klangner/sam3x/blob/master/src/hal/peripherals.rs
 // pub const SUPC      : u32 = 0 ; // Supply Controller
@@ -83,7 +85,6 @@ pub const GPIOF : PeripheralListing = PeripheralListing { offset: 16 };
 // pub const CAN0      : u32 = 43; // CAN Controller 0
 // pub const CAN1      : u32 = 44; // CAN Controller 1
 
-
 // impl Peripheral {
 //     pub fn id(&self) -> u32 {
 //         *self as u32
@@ -97,7 +98,6 @@ pub const GPIOF : PeripheralListing = PeripheralListing { offset: 16 };
 //         0x1 << (self.id() % 32)
 //     }
 // }
-
 
 // #[derive(Clone, Copy)]
 // #[repr(u32)]

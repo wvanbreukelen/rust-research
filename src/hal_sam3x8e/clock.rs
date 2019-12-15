@@ -1,6 +1,7 @@
 use sam3x8e;
 
 use crate::hal::clock::*;
+use crate::hal::pin::*;
 use crate::hal_sam3x8e::core::*;
 
 impl PMCConfigure<sam3x8e::PMC> for PMCControl<sam3x8e::PMC> {
