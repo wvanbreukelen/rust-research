@@ -1,4 +1,3 @@
-#![no_std]
 pub use cortex_m::peripheral::syst;
 //pub use sam3x8e as target;
 
@@ -78,10 +77,4 @@ macro_rules! create_pin {
     ($PIOX:expr, $PIOX_OFFSET:expr) => {
         create_pin($PIOX, $PIOX_OFFSET as u32);
     };
-}
-
-// Peripherals
-#[derive(Clone, Copy)]
-pub struct PeripheralListing {
-    pub offset: u32,
 }

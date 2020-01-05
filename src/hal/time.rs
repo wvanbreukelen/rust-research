@@ -109,3 +109,16 @@ impl Delay for Time {
         self.delay_ms(delay * 100)
     }
 }
+
+
+pub fn get_calib_ticks_10ms() -> Option<u32> {
+    let calibrated_tick_value = cortex_m::peripheral::SYST::get_ticks_per_10ms();
+
+    if calibrated_tick_value == 0 {
+        None
+    } else {
+        // Leave one clock cycle for checking the overflow
+        // Source: https://github.com/fionawhim/cortex-m-systick-countdown/blob/develop/src/lib.rs
+        Some((calibrated_tick_value + 1) / 10 - 1)
+    }
+}

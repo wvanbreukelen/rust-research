@@ -46,7 +46,7 @@ pub trait SerialRead {
 pub trait SerialWrite {
     fn write_byte<'b>(&self, ch: u8) -> nb::Result<(), ()>;
 
-    fn add_digit(&self, c: Wrapping<u8>, hex_base: Wrapping<u8>) -> Wrapping<u8> {
+    fn add_digit(&self, mut c: Wrapping<u8>, hex_base: Wrapping<u8>) -> Wrapping<u8> {
         if c > Wrapping(9) {
             c += hex_base - Wrapping(10);
         } else {
@@ -56,25 +56,31 @@ pub trait SerialWrite {
         c
     }
 
-    fn write_int(&self, mut val: Wrapping<i32>) {
-        let bytes: [u8; 4];
-        let mut minus = false;
+    fn write_int(&self, val: u32) {
+        
+        //let bytes: [u8; 4];
+        // let mut minus = false;
 
-        if val < Wrapping(0) {
-            minus = true;
-            val *= Wrapping(-1);
-        }
+        // let mut wrapped_val: Wrapping::<u32> = 0;
 
-        let mut index = 0;
+        // if val < Wrapping(0) {
+        //     minus = true;
+        //     //wrapped_val = val as u32;
+        // }
 
-        if val == Wrapping(0) {
-            self.write_byte_blocking(self.add_digit(Wrapping(x % ), 16).0 as u8);
-        }
+        // let mut wrapped_val = Wrapping::<u32>(val);
 
-        while val > Wrapping(0) {
+        // //let mut index = 0;
 
-            //bytes[index] = (val % 9)
-        }
+        // if wrapped_val == Wrapping(0) {
+        //     self.write_byte_blocking(self.add_digit(wrapped_val % Wrapping::<u32>(10), Wrapping::<u32>(16)).0 as u8);
+
+        // }
+
+        // while wrapped_val > Wrapping(0) {
+
+        //     //bytes[index] = (val % 9)
+        // }
 
         // bytes = unsafe { transmute(val) };
 
