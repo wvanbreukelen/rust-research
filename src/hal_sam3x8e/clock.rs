@@ -3,6 +3,7 @@ use sam3x8e;
 use crate::hal::clock::*;
 use crate::hal::pin::*;
 use crate::hal_sam3x8e::core::*;
+use crate::hal::peripheral::PeripheralListing;
 
 impl PMCConfigure<sam3x8e::PMC> for PMCControl<sam3x8e::PMC> {
     fn set_hw_device(&mut self, pmc: sam3x8e::PMC) {

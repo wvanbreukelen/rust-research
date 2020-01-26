@@ -2,6 +2,7 @@
 
 use crate::hal::clock::*;
 use crate::hal::pin::*;
+use crate::hal::peripheral::PeripheralListing;
 
 pub static mut CLOCK: PMCControl<sam3x8e::PMC> = PMCControl { rf: None };
 
